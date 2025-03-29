@@ -2,7 +2,6 @@ class APIFeatures {
   constructor(query, queryString) {
     this.query = query;
     this.queryString = queryString;
-    this.filterQuery = {};
   }
 
   filter() {
@@ -14,20 +13,27 @@ class APIFeatures {
     let queryStr = JSON.stringify(queryObj);
     queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, (match) => `$${match}`);
 
-    this.filterQuery = JSON.parse(queryStr);
-    this.query = this.query.find(this.filterQuery);
+    this.query = this.query.find(JSON.parse(queryStr));
+
     return this;
   }
 
-  search(fields) {
+  search() {
     if (this.queryString.search) {
       const searchRegex = new RegExp(this.queryString.search, "i");
+
       const searchQuery = {
-        $or: fields.map((field) => ({ [field]: searchRegex })),
+        $or: [
+          { title: searchRegex },
+          { description: searchRegex },
+          { category: searchRegex },
+          { tags: { $in: [this.queryString.search] } }, // Recherche dans les tags (tableau)
+        ],
       };
+
       this.query = this.query.find(searchQuery);
-      this.filterQuery = { ...this.filterQuery, ...searchQuery };
     }
+
     return this;
   }
 
@@ -38,6 +44,7 @@ class APIFeatures {
     } else {
       this.query = this.query.sort("-createdAt");
     }
+
     return this;
   }
 
@@ -45,7 +52,10 @@ class APIFeatures {
     if (this.queryString.fields) {
       const fields = this.queryString.fields.split(",").join(" ");
       this.query = this.query.select(fields);
+    } else {
+      this.query = this.query.select("-__v");
     }
+
     return this;
   }
 
@@ -54,9 +64,8 @@ class APIFeatures {
     const limit = this.queryString.limit * 1 || 100;
     const skip = (page - 1) * limit;
 
-    this.page = page;
-    this.limit = limit;
     this.query = this.query.skip(skip).limit(limit);
+
     return this;
   }
 }

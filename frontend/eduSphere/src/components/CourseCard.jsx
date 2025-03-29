@@ -10,18 +10,19 @@ const CourseCard = ({ course }) => {
   };
   const {
     title,
-    coverImage,
+    imageUrl,
     level,
     instructor,
     vote = 0,
     studentN = 0,
     slug,
+    _id,
   } = course;
   const { name: teacherName } = instructor;
   const { photo: teacherImg } = instructor.additionalDetails;
   const navigate = useNavigate();
   const handleNavigate = () => {
-    navigate(`/course/${slug}`);
+    navigate(`/course/${_id}`);
   };
 
   return (
@@ -31,7 +32,7 @@ const CourseCard = ({ course }) => {
     >
       <div className="p-6">
         <img
-          src={coverImage.url}
+          src={imageUrl}
           className="mr-5 rounded-xl w-full h-auto  object-cover"
           alt={title}
         />

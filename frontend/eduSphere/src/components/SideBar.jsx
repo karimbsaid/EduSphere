@@ -5,31 +5,28 @@ import {
   HiBookOpen,
   HiChevronDown,
   HiChevronRight,
+  HiChartPie,
 } from "react-icons/hi";
 import {
   HiMiniAcademicCap,
   HiMiniBookOpen,
   HiArrowLeftOnRectangle,
 } from "react-icons/hi2";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/authContext";
 
-export default function SideBar({ course, sectionId }) {
+export default function SideBar({ course, sectionId, className, userDetail }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [openSections, setOpenSections] = useState({}); // Gérer les sections ouvertes
+  const { logout } = useAuth();
   const isCourseEmpty =
     !course.title && !course.id && course.sections.length === 0;
-
-  const user = {
-    name: "John Doe",
-    avatar: "https://i.pravatar.cc/50",
-  };
-
-  console.log("isCourseEmpty", isCourseEmpty);
+  const navigate = useNavigate();
 
   const handleLogout = () => {
-    console.log("Déconnexion...");
+    logout();
+    console.log("deconnexion..");
   };
-
   const toggleSection = (sectionId) => {
     setOpenSections((prev) => ({
       ...prev,
@@ -39,13 +36,15 @@ export default function SideBar({ course, sectionId }) {
 
   const navItems = [
     { icon: HiHome, label: "Home", path: "/" },
-    { icon: HiMiniBookOpen, label: "Courses", path: "/courses" },
-    { icon: HiMiniAcademicCap, label: "Certificate", path: "/about" },
+    { icon: HiChartPie, label: "Dashboard", path: "/teacher/dashboard" },
+    { icon: HiMiniAcademicCap, label: "My Enrolled Courses", path: "/about" },
     { icon: HiBookOpen, label: "Resources", path: "/resources" },
   ];
 
   return (
-    <aside className="h-screen bg-gray-800 text-white transition-all duration-300 flex flex-col max-w-64">
+    <aside
+      className={` bg-gray-800 text-white transition-all duration-300 flex flex-col max-w-64 ${className}`}
+    >
       <div className="p-4 flex items-center justify-between">
         {!isCollapsed && <h1 className="text-l font-bold">EduSphere</h1>}
         <button
@@ -108,15 +107,18 @@ export default function SideBar({ course, sectionId }) {
         ))}
       </nav>
 
-      {!isCollapsed && (
+      {!isCollapsed && userDetail.name && (
         <div className="sticky bottom-0 bg-gray-800 p-4 border-t border-gray-700 flex justify-between items-center">
-          <div className="flex items-center">
+          <div
+            className="flex items-center"
+            onClick={() => navigate("/my-profile")}
+          >
             <img
-              src={user.avatar}
+              src={userDetail.additionalDetails?.photo}
               alt="User Avatar"
               className="w-10 h-10 rounded-full"
             />
-            <span className="ml-3">{user.name}</span>
+            <span className="ml-3">{userDetail.name}</span>
           </div>
 
           <button

@@ -1,5 +1,7 @@
 const mongoose = require("mongoose");
-
+const Enrollment = require("./enrollment.model");
+const Course = require("./course.models");
+const Interaction = require("./interaction.model");
 const progressSchema = new mongoose.Schema(
   {
     currentSection: { type: mongoose.Schema.Types.ObjectId, ref: "Section" },
@@ -22,6 +24,36 @@ const progressSchema = new mongoose.Schema(
 progressSchema.pre("save", function (next) {
   this.updatedAt = Date.now();
   next();
+});
+
+progressSchema.post("save", async function (doc) {
+  if (doc.progressPercentage === 100) {
+    try {
+      const enrollment = await Enrollment.findOne({ progress: doc._id });
+      if (!enrollment) return;
+
+      const course = await Course.findById(enrollment.courseId);
+      if (!course) return;
+
+      const interactions = course.tags.map((tag) =>
+        Interaction.findOneAndUpdate(
+          { student: enrollment.studentId, feature: tag },
+          { interactionType: "complete", updatedAt: new Date() }, // Correction ici
+          { upsert: true, new: true }
+        )
+      );
+
+      await Promise.all(interactions);
+
+      await Course.findByIdAndUpdate(
+        enrollment.courseId,
+        { $inc: { totalStudentComplete: 1 } },
+        { new: true }
+      );
+    } catch (error) {
+      console.error("Erreur lors de la mise à jour du progrès :", error);
+    }
+  }
 });
 
 module.exports = mongoose.model("Progress", progressSchema);

@@ -14,8 +14,8 @@ import { convertSecondToTime } from "../../utils/convertSecondToTime";
 
 export default function CourseContent({ course }) {
   const [activeSection, setActiveSection] = useState({});
-  const { sections, totalDuration, progress } = course;
-  const { completedSections, completedLectures } = progress;
+  const { sections, totalDuration, progress = {} } = course;
+  const { completedSections = [], completedLectures = [] } = progress;
   const isSectionCompleted = (sectionId) => {
     return completedSections.includes(sectionId);
   };

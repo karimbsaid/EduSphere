@@ -1,18 +1,48 @@
 /* eslint-disable react/prop-types */
 
-import { useRef, useState } from "react";
+import { use, useEffect, useRef, useState } from "react";
 import Tab from "../ui/Tab";
 import EditProfileModal from "../features/profile/EditProfileModal";
 import SettingsTab from "../features/profile/SettingsTab";
 import PersonalInfoTab from "../features/profile/PersonalInfoTab";
+import { getMyprofile, updateProfile } from "../services/apiProfile";
+import { useAuth } from "../context/authContext";
+import { getEnrolledCoursesStats } from "../services/apiEnrollment";
 
 export default function Profile() {
+  const { user } = useAuth();
+
+  const token = user?.token;
   const [profile, setProfile] = useState({
-    name: "Thomas Dupont",
-    email: "thomas.dupont@example.com",
-    phone: "+33 6 12 34 56 78",
-    avatar: "/placeholder.svg",
+    name: "",
+    email: "",
+    phone: "",
+    avatar: "",
+    bio: "",
+    completedCourses: 0,
+    inProgressCourses: 0,
   });
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      const { user } = await getMyprofile(token);
+      const { data } = await getEnrolledCoursesStats(token);
+      console.log(data);
+      const { additionalDetails } = user;
+      setProfile({
+        name: user.name,
+        email: user.email,
+        phone: additionalDetails.contactNumber,
+        bio: additionalDetails.bio,
+        completedCourses: data.completedCourses,
+        inProgressCourses: data.inProgressCourses,
+        avatar: additionalDetails.photo.includes("res.cloudinary.com")
+          ? additionalDetails.photo
+          : import.meta.env.VITE_API_BASE + additionalDetails.photo,
+      });
+    };
+    fetchUserData();
+  }, [token]);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("personal");
@@ -21,9 +51,9 @@ export default function Profile() {
     setProfile((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log(profile);
+    const data = await updateProfile(profile, token);
     setIsDialogOpen(false);
   };
   const tabData = [

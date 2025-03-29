@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
-import VideoPlayer from "../features/course/VideoPlayer";
 import { useNavigate, useParams } from "react-router-dom";
 import { getLecture } from "../services/apiCourse";
-import QuizLecture from "./QuizLecture";
 import Button from "../ui/Button";
 import { updateProgress } from "../services/apiEnrollment";
 import { useAuth } from "../context/authContext";
+import VideoPlayer from "../features/course/courseLecture/VideoPlayer";
+import QuizLecture from "../features/course/courseLecture/QuizLecture";
 
 export default function CourseLecture() {
   const { courseId, sectionId, lectureId } = useParams();
@@ -18,7 +18,7 @@ export default function CourseLecture() {
   useEffect(() => {
     const fetchLecture = async () => {
       const data = await getLecture(courseId, sectionId, lectureId);
-      console.log(data);
+
       setLecture(data);
     };
     fetchLecture();
@@ -47,11 +47,18 @@ export default function CourseLecture() {
       )}
       {lecture.type === "quiz" && (
         <QuizLecture
-          Questions={lecture.questions}
-          onCompleted={handleLectureCompleted}
+          questions={lecture.questions}
+          onComplete={handleLectureCompleted}
+          duration={lecture.duration}
         />
       )}
-      <Button label="marquer as completed" onClick={handleLectureCompleted} />
+      <div className="flex flex-col items-center">
+        <Button
+          label="marquer completé"
+          className="bg-green-500 text-white"
+          onClick={handleLectureCompleted}
+        />
+      </div>
     </div>
   );
 }

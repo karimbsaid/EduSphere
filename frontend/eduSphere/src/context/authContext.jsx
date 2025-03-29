@@ -33,6 +33,7 @@ export const AuthProvider = ({ children }) => {
   const signup = async (formData) => {
     const { name, email, password, role } = formData;
     const response = await signupUser(name, email, password, role);
+    console.log(response);
 
     if (response.status === "success") {
       const { user, token } = response;

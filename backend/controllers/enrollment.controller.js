@@ -5,7 +5,8 @@ const Enrollment = require("../models/enrollment.model");
 const Progress = require("../models/progress.models");
 const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
-
+const mongoose = require("mongoose");
+const Interaction = require("../models/interaction.model");
 const isSectionCompleted = (lecture, completedLectures) => {
   const lectureId = lecture.map((obj) => obj._id);
   return lectureId.every((element) => completedLectures.includes(element));
@@ -201,19 +202,68 @@ exports.getProgress = catchAsync(async (req, res, next) => {
   });
 });
 
-exports.getMyEnrolledCourse = catchAsync(async (req, res, next) => {
-  const studentId = req.user._id;
+// exports.getMyEnrolledCourse = catchAsync(async (req, res, next) => {
+//   const studentId = req.user._id;
 
-  const enrollments = await Enrollment.find({ studentId })
-    .populate({
-      path: "courseId",
-      populate: {
-        path: "sections",
-      },
-    })
-    .populate({
-      path: "progress",
-    });
+//   const enrollments = await Enrollment.find({ studentId })
+//     .populate({
+//       path: "courseId",
+//       populate: {
+//         path: "sections",
+//       },
+//     })
+//     .populate({
+//       path: "progress",
+//     });
 
-  res.status(200).json({ enrollments });
-});
+//   res.status(200).json({ enrollments });
+// });
+
+// exports.getStatistique = catchAsync(async (req, res, next) => {
+//   const studentId = req.user._id;
+
+//   const stats = await Enrollment.aggregate([
+//     { $match: { studentId: new mongoose.Types.ObjectId(studentId) } }, // Filtrer par étudiant
+//     {
+//       $lookup: {
+//         from: "progresses",
+//         localField: "progress",
+//         foreignField: "_id",
+//         as: "progressData",
+//       },
+//     },
+//     { $unwind: "$progressData" }, // Dérouler l'objet progress
+//     {
+//       $group: {
+//         _id: null,
+//         completedCourses: {
+//           $sum: {
+//             $cond: [{ $eq: ["$progressData.progressPercentage", 100] }, 1, 0],
+//           },
+//         },
+//         inProgressCourses: {
+//           $sum: {
+//             $cond: [{ $lt: ["$progressData.progressPercentage", 100] }, 1, 0],
+//           },
+//         },
+//       },
+//     },
+//   ]);
+
+//   res.status(200).json({
+//     status: "success",
+//     data: stats[0] || { completedCourses: 0, inProgressCourses: 0 },
+//   });
+// });
+
+// exports.createInteraction = catchAsync(async (req, res, next) => {
+//   const { courseId } = req.params;
+//   const studentId = req.user._id;
+//   const { interactionType } = req.body;
+//   const newInteraction = Interaction.create({
+//     course: courseId,
+//     student: studentId,
+//     interactionType,
+//   });
+//   await newInteraction.save();
+// });

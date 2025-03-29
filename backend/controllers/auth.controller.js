@@ -26,13 +26,15 @@ exports.signin = catchAsync(async (req, res, next) => {
     role,
     additionalDetails: defaultProfile._id,
   });
-
+  const userObj = user.toObject();
+  delete userObj.password;
+  delete userObj.email;
   const token = signToken(user._id);
 
   res.status(201).json({
     status: "success",
     token,
-    user: userExiste,
+    user: userObj,
   });
 });
 

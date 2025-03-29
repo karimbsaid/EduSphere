@@ -3,41 +3,48 @@ const validator = require("validator");
 const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
 
-const userSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: [true, "Veuillez entrer votre nom"],
-    trim: true,
+const userSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      required: [true, "Veuillez entrer votre nom"],
+      trim: true,
+    },
+    email: {
+      type: String,
+      required: [true, "Veuillez fournir un email"],
+      unique: true,
+      lowercase: true,
+      validate: [validator.isEmail, "Email invalide"],
+    },
+    password: {
+      type: String,
+      required: [true, "Veuillez choisir un mot de passe"],
+      minlength: 8,
+      select: false,
+    },
+    role: {
+      type: String,
+      enum: ["student", "instructor", "admin"],
+      default: "student",
+    },
+    additionalDetails: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "UserDetails",
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now,
+      select: false,
+    },
+    passwordResetToken: { type: String, select: false },
+    passwordResetExpires: { type: Date, select: false },
   },
-  email: {
-    type: String,
-    required: [true, "Veuillez fournir un email"],
-    unique: true,
-    lowercase: true,
-    validate: [validator.isEmail, "Email invalide"],
-  },
-  password: {
-    type: String,
-    required: [true, "Veuillez choisir un mot de passe"],
-    minlength: 8,
-    select: false,
-  },
-  role: {
-    type: String,
-    enum: ["student", "instructor", "admin"],
-    default: "student",
-  },
-  additionalDetails: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "UserDetails",
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
-  passwordResetToken: String,
-  passwordResetExpires: Date,
-});
+  {
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
+  }
+);
 
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
@@ -63,5 +70,17 @@ userSchema.methods.createPasswordResetToken = function () {
 
   return resetToken;
 };
+
+userSchema.virtual("courses", {
+  ref: "Course",
+  localField: "_id",
+  foreignField: "instructor",
+  options: {
+    populate: {
+      path: "sections",
+      select: "title lectures",
+    },
+  },
+});
 
 module.exports = mongoose.model("User", userSchema);

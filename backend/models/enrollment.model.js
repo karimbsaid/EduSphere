@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-
+const Course = require("./course.models");
 const enrollmentSchema = new mongoose.Schema({
   courseId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -18,6 +18,14 @@ const enrollmentSchema = new mongoose.Schema({
   },
   enrolledAt: { type: Date, default: Date.now },
   progress: { type: mongoose.Schema.Types.ObjectId, ref: "Progress" },
+});
+
+enrollmentSchema.post("save", async function (doc) {
+  await Course.findByIdAndUpdate(
+    doc.courseId,
+    { $inc: { totalStudent: 1 } },
+    { new: true }
+  );
 });
 
 module.exports = mongoose.model("Enrollment", enrollmentSchema);

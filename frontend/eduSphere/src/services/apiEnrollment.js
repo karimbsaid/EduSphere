@@ -3,7 +3,7 @@ const API_URL = "http://localhost:8080/api/v1/";
 export const getProgress = async (courseId, token) => {
   try {
     const response = await fetch(
-      `${API_URL}course-enroll/${courseId}/my-progress`,
+      `${API_URL}enrollment/${courseId}/my-progress`,
       {
         method: "GET",
         headers: {
@@ -31,7 +31,7 @@ export const getProgress = async (courseId, token) => {
 };
 
 export const enroll = async (courseId, token) => {
-  const response = await fetch(`${API_URL}course-enroll/${courseId}/enroll`, {
+  const response = await fetch(`${API_URL}enrollment/${courseId}/enroll`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -86,4 +86,20 @@ export const getMyEnrolledCourse = async (token) => {
       message: "Erreur réseau ou serveur",
     };
   }
+};
+
+export const getEnrolledCoursesStats = async (token) => {
+  const response = await fetch(`${API_URL}course-enroll/my-enrolled-stats`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const data = await response.json();
+  console.log(data);
+
+  if (!response.ok) throw new Error("Erreur lors de la fetch du stats");
+
+  return data;
 };

@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const userDetailsSchema = new mongoose.Schema({
   photo: {
     type: String,
-    default: "/images/avatar.jpg",
+    default: `${process.env.BASE_URL}/images/avatar.jpg`,
   },
   bio: { type: String, default: "---" },
   contactNumber: {

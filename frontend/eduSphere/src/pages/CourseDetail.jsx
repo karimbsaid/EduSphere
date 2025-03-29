@@ -1,48 +1,75 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import CourseInformation from "../features/course/CourseInformation";
-import CourseContent from "../features/course/CourseContent";
-import CourseIncludes from "../features/course/CourseIncludes";
+import CourseIncludes from "../features/course/courseDetail/CourseIncludes";
 import { getCourseDetail } from "../services/apiCourse";
 import { enroll, getProgress } from "../services/apiEnrollment";
-
 import { useAuth } from "../context/authContext";
+import CourseCard from "../features/course/courseDetail/CourseDetails";
+import CourseSection from "../features/course/courseDetail/CourseSection";
+import { getCourseReviews } from "../services/apiReview";
+import ReviewCard from "../features/course/courseDetail/ReviewCard";
 
 function CourseDetail() {
   const { courseId } = useParams();
   const [courseDetail, setCourseDetail] = useState({});
+  const [reviews, setReviews] = useState([]);
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [progress, setProgress] = useState(null);
+  const [openSection, setOpenSection] = useState("section-1");
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
+
   const navigate = useNavigate();
   const { user } = useAuth();
-  const token = user.token;
+  const token = user?.token;
 
   useEffect(() => {
+    const fetchReviews = async () => {
+      try {
+        const data = await getCourseReviews(courseId);
+
+        if (data.status === "success") {
+          console.log("ok");
+          setReviews(data.reviews); // Assurez-vous que le backend retourne `reviews` dans `data`
+          setError(null);
+        } else if (data.status === "fail") {
+          setReviews([]);
+          setError(data.message); // "Aucun avis trouvé pour ce cours"
+        } else {
+          setError("Réponse inattendue du serveur");
+          setReviews([]);
+        }
+      } catch (err) {
+        setError(err.message || "Une erreur s'est produite");
+        setReviews([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     const loadCourse = async () => {
       try {
-        const { data } = await getCourseDetail(courseId);
-
+        const { course } = await getCourseDetail(courseId);
         if (token) {
           const progressResponse = await getProgress(courseId, token);
-          4;
 
           if (progressResponse.status === "success") {
             setIsEnrolled(true);
-            data.progress = progressResponse.progress;
+            course.progress = progressResponse.progress;
           }
         }
-
-        setCourseDetail(data);
+        setCourseDetail(course);
       } catch (error) {
         console.error("Erreur lors du chargement du cours:", error);
-        // Optionnel: Affichez un message d'erreur à l'utilisateur
       }
     };
 
     loadCourse();
+    fetchReviews();
   }, [courseId, token]);
 
   const handleEnrollCourse = async () => {
+    console.log("here");
     const response = await enroll(courseDetail._id, token);
     if (response.status === "success") {
       const enrollment = response.enrollment;
@@ -55,52 +82,75 @@ function CourseDetail() {
     }
   };
   const handleContinueWatching = () => {
-    console.log(courseDetail);
     const currentSection = courseDetail.progress?.currentSection;
     const currentLecture = courseDetail.progress?.currentLecture;
     navigate(
       `/course/${courseId}/chapter/${currentSection}/lecture/${currentLecture}`
     );
   };
+  const handleSectionToggle = (sectionId) => {
+    setOpenSection(openSection === sectionId ? null : sectionId);
+  };
+  const { quizCount, videoCount } = courseDetail.sections?.reduce(
+    (counts, section) => {
+      section.lectures?.forEach((lecture) => {
+        if (lecture.type === "quiz") {
+          counts.quizCount += 1;
+        } else if (lecture.type === "video") {
+          counts.videoCount += 1;
+        }
+      });
+      return counts;
+    },
+    { quizCount: 0, videoCount: 0 }
+  ) || { quizCount: 0, videoCount: 0 };
+  const totalResource = courseDetail.resources?.length;
+
+  const handleWatchCourse = () => {
+    if (token) {
+      if (isEnrolled) {
+        handleContinueWatching();
+      } else {
+        handleEnrollCourse();
+      }
+    } else {
+      navigate("/login");
+    }
+  };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 p-6 bg-gray-50 min-h-screen">
-      <div className="w-full lg:w-3/5">
-        <CourseInformation course={courseDetail} />
-        {courseDetail.sections && <CourseContent course={courseDetail} />}
-      </div>
-
-      <div className="w-full lg:w-2/5">
-        <div className="bg-white p-6 rounded-xl shadow-md">
-          <img
-            src="/teacher.jpg"
-            className="w-full rounded-xl w-md h-md object-cover"
-            alt="teacher"
-          />
-
-          <p className="text-3xl text-purple-600 font-semibold">
-            ${courseDetail.price}
-          </p>
-
-          {isEnrolled ? (
-            <button
-              onClick={handleContinueWatching}
-              className="w-full mt-4 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700"
-            >
-              Continue Watching
-            </button>
-          ) : (
-            <button
-              onClick={handleEnrollCourse}
-              className="w-full mt-4 bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700"
-            >
-              Book trial lesson
-            </button>
-          )}
+    <>
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-6 px-4 container mx-auto">
+        <div className="md:col-span-3 space-y-6 w-full">
+          <CourseCard course={courseDetail} />
+          {courseDetail.sections?.map((section) => (
+            <CourseSection
+              key={section._id}
+              section={section}
+              isOpen={openSection === section._id}
+              onToggle={() => handleSectionToggle(section._id)}
+              onLectureClick={() => console.log("ok")}
+            />
+          ))}
         </div>
-        <CourseIncludes />
+        <div className="md:col-span-2">
+          <CourseIncludes
+            isEnrolled={isEnrolled}
+            myProgress={courseDetail?.progress?.progressPercentage}
+            totalVideo={videoCount}
+            totalResource={totalResource}
+            totalQuiz={quizCount}
+            handleWatchCourse={handleWatchCourse}
+          />
+        </div>
       </div>
-    </div>
+      <h1 className="font-bold my-2 ml-2">les reviews des nos etudiants</h1>
+      <div className="mx-2">
+        {reviews.map((rev, index) => (
+          <ReviewCard key={index} review={rev} />
+        ))}
+      </div>
+    </>
   );
 }
 

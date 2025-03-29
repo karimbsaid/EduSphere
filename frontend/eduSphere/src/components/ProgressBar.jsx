@@ -1,5 +1,5 @@
 /* eslint-disable react/prop-types */
-const ProgressBar = ({ myAvance, total }) => {
+const ProgressBar = ({ myAvance, total = 100 }) => {
   const percentage = Math.min((myAvance / total) * 100, 100).toFixed(2); // Assurez que le pourcentage ne dépasse pas 100
 
   return (

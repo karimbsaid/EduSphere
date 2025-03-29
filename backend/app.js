@@ -3,6 +3,7 @@ const AppError = require("./utils/appError");
 const courseRouter = require("./routes/course.routes");
 const enrollRouter = require("./routes/enrollment.routes");
 const profileRouter = require("./routes/user.routes");
+const reviewRouter = require("./routes/review.routes");
 // const userRouter = require("./routes/userRoutes");
 const authRouter = require("./routes/auth.routes");
 const globalErrorController = require("./controllers/error.controller");
@@ -23,10 +24,9 @@ app.use(
 );
 app.use(express.static(`${__dirname}/public`));
 
-// app.use("/api/v1/users", userRouter);
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/courses", courseRouter);
-app.use("/api/v1/course-enroll", enrollRouter);
+app.use("/api/v1/enrollment", enrollRouter);
 app.use("/api/v1/users", profileRouter);
 
 app.all("*", (req, res, next) => {

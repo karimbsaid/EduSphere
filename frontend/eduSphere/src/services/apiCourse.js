@@ -7,8 +7,7 @@ const API_URL = "http://localhost:8080/api/v1/";
 //   return { Authorization: `Bearer ${token}` };
 // };
 
-export const createCourse = async (courseData) => {
-  console.log(courseData);
+export const createCourse = async (courseData, token) => {
   const formData = new FormData();
   formData.append("title", courseData.title);
   formData.append("description", courseData.description);
@@ -19,8 +18,11 @@ export const createCourse = async (courseData) => {
   if (courseData.coverImage)
     formData.append("coverImage", courseData.coverImage);
 
-  const response = await fetch(API_URL, {
+  const response = await fetch(`${API_URL}courses`, {
     method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
     body: formData,
   });
 
@@ -29,6 +31,7 @@ export const createCourse = async (courseData) => {
 };
 
 export const createSection = async (courseId, sectionTitle) => {
+  console.log("creation d'un section", courseId, sectionTitle);
   const response = await fetch(`${API_URL}courses/${courseId}/sections`, {
     method: "POST",
     headers: {
@@ -36,12 +39,13 @@ export const createSection = async (courseId, sectionTitle) => {
     },
     body: JSON.stringify({ title: sectionTitle }),
   });
-
   if (!response.ok) throw new Error("Erreur lors de la création de la section");
   return response.json();
 };
 
 export const uploadLecture = async (courseId, sectionId, lectureData) => {
+  console.log("uploadLecture");
+  console.log(courseId, sectionId, lectureData);
   const formData = new FormData();
   formData.append("title", lectureData.title);
   formData.append("type", lectureData.type);
@@ -112,7 +116,17 @@ export const getCourseDetail = async (courseId) => {
   const response = await fetch(`${API_URL}courses/${courseId}`, {
     method: "GET",
   });
+  if (!response.ok) throw new Error("Erreur lors de la fetch du cours");
+  return response.json();
+};
 
+export const getCourseDetailEdit = async (courseId, token) => {
+  const response = await fetch(`${API_URL}courses/${courseId}/edit`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
   if (!response.ok) throw new Error("Erreur lors de la fetch du cours");
   return response.json();
 };
@@ -248,7 +262,7 @@ export const deleteSection = async (courseId, sectionId) => {
 
 export const getLecture = async (courseId, sectionId, lectureId) => {
   const response = await fetch(
-    `${API_URL}courses/${courseId}/chapter/${sectionId}/lecture/${lectureId}`,
+    `${API_URL}courses/${courseId}/sections/${sectionId}/lectures/${lectureId}`,
     {
       method: "GET",
     }
@@ -258,8 +272,57 @@ export const getLecture = async (courseId, sectionId, lectureId) => {
   return response.json();
 };
 
-export const getAllcourse = async () => {
-  const response = await fetch(`${API_URL}courses`, {
+export const getAllcourse = async (queryParams = {}) => {
+  const response = await fetch(`${API_URL}courses?${queryParams}`, {
+    method: "GET",
+  });
+
+  if (!response.ok) throw new Error("Erreur lors de la fetch du cours");
+  return response.json();
+};
+
+export const getAllMyCourseStats = async (token) => {
+  const response = await fetch(`${API_URL}courses/my-courses-stats`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) throw new Error("Erreur lors de la fetch du cours");
+  return response.json();
+};
+
+export const addResource = async (courseId, resourceData, courseTitle) => {
+  const formData = new FormData();
+  formData.append("title", resourceData.title);
+  formData.append("courseTitle", courseTitle);
+  if (resourceData.file) formData.append("resourceFile", resourceData.file);
+
+  const response = await fetch(`${API_URL}courses/${courseId}/resources`, {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!response.ok) throw new Error("Erreur lors de la création du resource");
+  return response.json();
+};
+
+export const updateResource = async (resourceId, token, resourceData) => {
+  const formData = new FormData();
+  formData.append("title", resourceData.title);
+  if (resourceData.file) formData.append("resourceFile", resourceData.file);
+  const response = await fetch(`${API_URL}courses/resources/${resourceId}`, {
+    method: "PATCH",
+    body: formData,
+  });
+
+  if (!response.ok) throw new Error("Erreur lors de la création du resource");
+  return response.json();
+};
+
+export const getResources = async (courseId) => {
+  const response = await fetch(`${API_URL}courses/${courseId}/resources`, {
     method: "GET",
   });
 

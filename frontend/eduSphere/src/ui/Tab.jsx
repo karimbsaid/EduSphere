@@ -1,25 +1,24 @@
 /* eslint-disable react/prop-types */
 import React from "react";
+import Button from "./Button";
 
 const Tab = ({ tabData, field, setField }) => {
   return (
-    <div className="flex justify-center space-x-4 mb-4">
+    <div className="flex flex-wrap justify-center space-x-4  bg-gray-100 items-center">
       {tabData.map((tab) => (
-        <button
+        <Button
           key={tab.id}
-          type="button" // Évite d'envoyer le formulaire
-          className={`px-4 py-2 rounded-lg transition-all duration-300 ${
+          label={tab.tabName}
+          className={
             field === tab.type
-              ? "bg-blue-600 text-white shadow-lg"
-              : "bg-gray-300 text-gray-700 hover:bg-gray-400"
-          }`}
+              ? "bg-black text-white"
+              : "text-gray-600 bg-transparent"
+          }
           onClick={(e) => {
             e.preventDefault(); // Empêche la soumission du formulaire
             setField(tab.type);
           }}
-        >
-          {tab.tabName}
-        </button>
+        />
       ))}
     </div>
   );

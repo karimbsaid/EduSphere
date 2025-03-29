@@ -2,7 +2,7 @@
 import { FiMail, FiPhone } from "react-icons/fi";
 
 const PersonalInfoTab = ({ profile, onEditClick }) => {
-  console.log("profile", profile);
+  console.log(profile);
   return (
     <div className="space-y-6 mt-6">
       <div className="bg-white rounded-lg border shadow-sm">
@@ -37,6 +37,10 @@ const PersonalInfoTab = ({ profile, onEditClick }) => {
                   <FiPhone className="h-4 w-4" />
                   <span>{profile.phone}</span>
                 </div>
+                <div className=" gap-2">
+                  <h3 className="text-lg font-medium">bio </h3>
+                  <span>{profile.bio}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -67,15 +71,21 @@ const PersonalInfoTab = ({ profile, onEditClick }) => {
         <div className="p-6">
           <div className="grid gap-6 sm:grid-cols-3">
             <div className="flex flex-col items-center justify-center rounded-lg border p-4">
-              <div className="text-3xl font-bold">4</div>
+              <div className="text-3xl font-bold">
+                {profile.inProgressCourses}
+              </div>
               <div className="text-sm text-gray-500">Cours en cours</div>
             </div>
             <div className="flex flex-col items-center justify-center rounded-lg border p-4">
-              <div className="text-3xl font-bold">7</div>
+              <div className="text-3xl font-bold">
+                {profile.completedCourses}
+              </div>
               <div className="text-sm text-gray-500">Cours terminés</div>
             </div>
             <div className="flex flex-col items-center justify-center rounded-lg border p-4">
-              <div className="text-3xl font-bold">12</div>
+              <div className="text-3xl font-bold">
+                {profile.completedCourses}
+              </div>
               <div className="text-sm text-gray-500">Certificats obtenus</div>
             </div>
           </div>

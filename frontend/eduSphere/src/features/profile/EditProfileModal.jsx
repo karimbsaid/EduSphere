@@ -1,5 +1,5 @@
 /* eslint-disable react/prop-types */
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FiCamera, FiX } from "react-icons/fi";
 
 const EditProfileModal = ({
@@ -9,10 +9,16 @@ const EditProfileModal = ({
   handleSubmit,
   setIsDialogOpen,
 }) => {
-  const fileInputRef = useRef(null);
   const [previewImage, setPreviewImage] = useState(
     formData.avatar || "/placeholder.svg"
   );
+  useEffect(() => {
+    if (formData.avatar) {
+      setPreviewImage(formData.avatar);
+    }
+  }, [formData.avatar]);
+  const fileInputRef = useRef(null);
+
   if (!isOpen) return null;
 
   const handleImageClick = () => {
@@ -122,6 +128,22 @@ const EditProfileModal = ({
                 value={formData.phone}
                 onChange={(e) => handleChange("phone", e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            <div className="space-y-2">
+              <label
+                htmlFor="phone"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Bio
+              </label>
+              <textarea
+                id="bio"
+                value={formData.bio}
+                onChange={(e) => handleChange("bio", e.target.value)}
+                placeholder="Enter bio "
+                rows={4}
+                className="mt-1 w-full rounded border-gray-300 p-2 shadow-sm focus:border-black focus:ring-black"
               />
             </div>
           </div>
