@@ -28,7 +28,15 @@ export default function CoursePreview({ courseData }) {
   //     0
   //   )
   //   .toFixed(1);
-  const totalHours = 50;
+
+  const totalHours = courseData.sections.reduce((total, section) => {
+    const sectionTotal = section.lectures.reduce((sum, content) => {
+      return sum + Number(content.duration);
+    }, 0);
+    return total + sectionTotal;
+  }, 0);
+
+  // const totalHours = 50;
   const coverImage = courseData.isEdit
     ? courseData.coverImage
     : URL.createObjectURL(courseData.coverImage);

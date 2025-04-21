@@ -82,9 +82,12 @@ const AddReview = () => {
                 placeholder="Partagez votre expérience..."
               />
             </div>
-            <Button type="submit" disabled={isSubmitting} className="w-full">
-              {isSubmitting ? "Envoi..." : "Soumettre"}
-            </Button>
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full bg-black text-white"
+              label={`${!isSubmitting ? "Envoi" : "Soumettre"}`}
+            />
           </form>
         </Card>
       )}

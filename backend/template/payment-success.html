@@ -1,0 +1,28 @@
+<!-- templates/payment-success.html -->
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Paiement Réussi</title>
+    <link rel="stylesheet" href="../template/styles/payment.css" />
+  </head>
+  <body>
+    <div class="card">
+      <div class="status-icon success">🎉</div>
+      <h1 class="success">Paiement Réussi !</h1>
+
+      <div class="course-info">
+        <h2>{{title}}</h2>
+        <p>Formateur : {{instructor}}</p>
+        <p>Montant : {{amount}} TND</p>
+      </div>
+
+      <p>{{message}}</p>
+
+      <a href="{{courseLink}}" class="button success-btn">
+        Commencer la formation →
+      </a>
+    </div>
+  </body>
+</html>

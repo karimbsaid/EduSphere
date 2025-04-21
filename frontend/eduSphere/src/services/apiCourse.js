@@ -113,10 +113,33 @@ export const uploadLecture = async (courseId, sectionId, lectureData) => {
 };
 
 export const getCourseDetail = async (courseId) => {
-  const response = await fetch(`${API_URL}courses/${courseId}`, {
+  try {
+    const response = await fetch(`${API_URL}courses/${courseId}`, {
+      method: "GET",
+    });
+
+    const data = await response.json();
+
+    if (response.status === 404) {
+      return data;
+    }
+
+    if (!response.ok) {
+      throw new Error(
+        data.message || "Erreur lors de la récupération du cours"
+      );
+    }
+
+    return data;
+  } catch (error) {
+    throw new Error("Erreur réseau : " + error.message);
+  }
+};
+export const getStats = async () => {
+  const response = await fetch(`${API_URL}courses/stats`, {
     method: "GET",
   });
-  if (!response.ok) throw new Error("Erreur lors de la fetch du cours");
+  if (!response.ok) throw new Error("Erreur lors de la fetch du stats");
   return response.json();
 };
 
@@ -271,18 +294,124 @@ export const getLecture = async (courseId, sectionId, lectureId) => {
   if (!response.ok) throw new Error("Erreur lors de la fetch du lecture");
   return response.json();
 };
-
-export const getAllcourse = async (queryParams = {}) => {
-  const response = await fetch(`${API_URL}courses?${queryParams}`, {
+export const getPopulaireCourses = async () => {
+  const response = await fetch(`${API_URL}courses/top-five`, {
     method: "GET",
+  });
+
+  if (!response.ok) throw new Error("Erreur lors de la récupération des cours");
+  return response.json();
+};
+export const getAllcourse = async (queryParams = {}, token) => {
+  const query = {};
+  console.log(queryParams.price);
+
+  // Gestion de la durée
+  switch (queryParams.duration) {
+    case "short":
+      query["totalDuration[lte]"] = 3 * 3600;
+      break;
+    case "medium":
+      query["totalDuration[gte]"] = 3 * 3600;
+      query["totalDuration[lte]"] = 10 * 3600;
+      break;
+    case "long":
+      query["totalDuration[gte]"] = 10 * 3600;
+      break;
+    default:
+      if (queryParams.duration !== "tous") {
+        query.duration = queryParams.duration;
+      }
+  }
+
+  // Gestion du prix
+  switch (queryParams.price) {
+    case "free":
+      query["price"] = 0;
+      break;
+    case "paid":
+      query["price[gt]"] = 0;
+      break;
+    case "low":
+      query["price[lte]"] = 20;
+      break;
+    case "medium":
+      query["price[gte]"] = 20;
+      query["price[lte]"] = 50;
+      break;
+    case "high":
+      query["price[gt]"] = 50;
+      break;
+    default:
+      if (queryParams.price !== "tous") {
+        query.price = queryParams.price;
+      }
+  }
+  switch (queryParams.averageRating) {
+    case "HIGH":
+      query["averageRating"] = 5;
+      break;
+    case "MEDIUM":
+      query["averageRating[gte]"] = 4;
+      break;
+    case "LOW":
+      query["averageRating[gte]"] = 3;
+      break;
+    default:
+      if (queryParams.averageRating !== "tous") {
+        query.averageRating = queryParams.averageRating;
+      }
+  }
+
+  // Filtres simples
+  if (queryParams.sort) query.sort = queryParams.sort;
+  if (queryParams.page) query.page = queryParams.page;
+  if (queryParams.limit) query.limit = queryParams.limit;
+  if (queryParams.status) query.status = queryParams.status;
+
+  if (queryParams.search) query.search = queryParams.search;
+  if (queryParams.level && queryParams.level !== "level")
+    query.level = queryParams.level;
+  if (queryParams.category && queryParams.category !== "all")
+    query.category = queryParams.category;
+
+  // Pagination
+  if (queryParams.page) query.page = queryParams.page;
+  if (queryParams.limit) query.limit = queryParams.limit;
+  Object.keys(query).forEach((key) => {
+    if (query[key] === undefined || query[key] === "" || query[key] === null) {
+      delete query[key];
+    }
+  });
+  const queryString = new URLSearchParams(query).toString();
+  console.log("Generated query:", queryString);
+  const headers = {};
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  const response = await fetch(`${API_URL}courses?${queryString}`, {
+    method: "GET",
+    headers,
+  });
+
+  if (!response.ok) throw new Error("Erreur lors de la récupération des cours");
+  return response.json();
+};
+
+export const getAllMyCourseStats = async (token) => {
+  const response = await fetch(`${API_URL}courses/my-courses-stats`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
   });
 
   if (!response.ok) throw new Error("Erreur lors de la fetch du cours");
   return response.json();
 };
 
-export const getAllMyCourseStats = async (token) => {
-  const response = await fetch(`${API_URL}courses/my-courses-stats`, {
+export const getRecommendedCourses = async (token) => {
+  const response = await fetch(`${API_URL}courses/recommend`, {
     method: "GET",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -327,5 +456,25 @@ export const getResources = async (courseId) => {
   });
 
   if (!response.ok) throw new Error("Erreur lors de la fetch du cours");
+  return response.json();
+};
+
+export const approuveRejetCour = async (
+  courseId,
+  status,
+  raisonRejet = "",
+  token
+) => {
+  const response = await fetch(`${API_URL}courses/${courseId}/approuverejet`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ message: raisonRejet, status }),
+  });
+  console.log(await response.json());
+
+  if (!response.ok) throw new Error("Erreur lors de l approuve ou bien rejet");
   return response.json();
 };

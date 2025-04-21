@@ -1,11 +1,10 @@
 const nodemailer = require("nodemailer");
 const { passwordResetTemplate } = require("../template/mail/resetToken");
 module.exports = class Email {
-  constructor(user, url = "") {
+  constructor(user) {
     this.to = user.email;
     this.firstName = user.name.split(" ")[0];
     this.from = `Money hunter <${process.env.EMAIL_USER}>`;
-    this.url = url;
   }
   newTransport() {
     return nodemailer.createTransport({
@@ -16,8 +15,8 @@ module.exports = class Email {
       },
     });
   }
-  async sendPasswordResetToken() {
-    const reponse = passwordResetTemplate(this.firstName, this.url);
+  async sendPasswordResetToken(url) {
+    const reponse = passwordResetTemplate(this.firstName, url);
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: this.to,
@@ -32,5 +31,20 @@ module.exports = class Email {
         console.log("Email sent: ", info.response);
       }
     });
+  }
+  async sendRejetAcceptationEmail(subject, text) {
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: this.to,
+      subject,
+      text,
+    };
+
+    try {
+      let info = await this.newTransport().sendMail(mailOptions);
+      console.log("Email envoyé: " + info.response);
+    } catch (error) {
+      console.error("Erreur envoi email:", error);
+    }
   }
 };

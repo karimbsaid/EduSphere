@@ -1,30 +1,40 @@
 /* eslint-disable react/prop-types */
-import React, { createContext, useState, useContext } from "react";
+import React, { createContext, useState, useContext, useEffect } from "react";
 import { loginUser, signupUser } from "../services/apiLogin";
+import { getMyprofile } from "../services/apiProfile";
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(() => {
-    const token = localStorage.getItem("token")
-      ? localStorage.getItem("token")
-      : null;
-    const storedUser = localStorage.getItem("user")
-      ? JSON.parse(localStorage.getItem("user"))
-      : null;
-    return { token, user: storedUser };
-  });
+  const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const initializeAuth = async () => {
+      const token = localStorage.getItem("token");
+
+      if (token) {
+        try {
+          const { user } = await getMyprofile(token);
+          setUser({ ...user, token });
+        } catch (error) {
+          console.error("Failed to load user profile:", error);
+          localStorage.removeItem("token");
+        }
+      }
+      setIsLoading(false);
+    };
+
+    initializeAuth();
+  }, []);
 
   const login = async (email, password) => {
     const response = await loginUser(email, password);
+
     if (response.status === "success") {
-      const { user, token } = response;
-
-      localStorage.setItem("user", JSON.stringify(user));
+      const { user: userData, token } = response;
       localStorage.setItem("token", token);
-
-      // Update user state
-      setUser({ user, token });
+      setUser({ ...userData, token });
     } else {
       throw new Error(response.message);
     }
@@ -33,15 +43,11 @@ export const AuthProvider = ({ children }) => {
   const signup = async (formData) => {
     const { name, email, password, role } = formData;
     const response = await signupUser(name, email, password, role);
-    console.log(response);
 
     if (response.status === "success") {
-      const { user, token } = response;
-
-      localStorage.setItem("user", JSON.stringify(user));
+      const { user: userData, token } = response;
       localStorage.setItem("token", token);
-
-      setUser({ user, token });
+      setUser({ ...userData, token });
       return response;
     } else {
       throw new Error(response.message);
@@ -49,18 +55,30 @@ export const AuthProvider = ({ children }) => {
   };
 
   const userBelongsToGroup = (groupName) => {
-    return user?.user?.role && groupName.includes(user.user.role);
+    return user?.role && groupName.includes(user.role);
   };
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem("user");
-    localStorage.removeItem("token");
   };
+
+  // useEffect(() => {
+  //   if (!user) {
+  //     localStorage.removeItem("token");
+  //   }
+  // }, [user]);
 
   return (
     <AuthContext.Provider
-      value={{ login, signup, logout, user, userBelongsToGroup }}
+      value={{
+        login,
+        signup,
+        logout,
+        user,
+        setUser,
+        isLoading,
+        userBelongsToGroup,
+      }}
     >
       {children}
     </AuthContext.Provider>

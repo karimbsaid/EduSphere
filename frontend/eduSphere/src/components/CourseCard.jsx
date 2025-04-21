@@ -13,9 +13,9 @@ const CourseCard = ({ course }) => {
     imageUrl,
     level,
     instructor,
-    vote = 0,
-    studentN = 0,
-    slug,
+    averageRating = 0,
+    totalStudent = 0,
+    price,
     _id,
   } = course;
   const { name: teacherName } = instructor;
@@ -24,7 +24,6 @@ const CourseCard = ({ course }) => {
   const handleNavigate = () => {
     navigate(`/course/${_id}`);
   };
-
   return (
     <div
       onClick={handleNavigate}
@@ -45,12 +44,12 @@ const CourseCard = ({ course }) => {
           <div className="flex">
             <div className="flex items-center text-gray-500 mr-2 ">
               <HiMiniUsers className="mr-1" />
-              <span className="text-sm font-normal">{studentN}</span>
+              <span className="text-sm font-normal">{totalStudent}</span>
             </div>
 
             <div className="flex items-center text-gray-500 ">
               <HiMiniStar className="mr-1 text-yellow-500" />
-              <span className="text-sm font-light">{vote}</span>
+              <span className="text-sm font-light">{averageRating}</span>
             </div>
           </div>
         </div>
@@ -65,7 +64,7 @@ const CourseCard = ({ course }) => {
             />
             <span className="text-purple-600 font-medium">{teacherName}</span>
           </div>
-          <span>25 $</span>
+          <span>{price} TND</span>
         </div>
       </div>
     </div>

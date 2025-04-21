@@ -57,35 +57,17 @@ export const updateProgress = async (courseId, sectionId, lectureId, token) => {
 };
 
 /**get my enrolled course */
-
 export const getMyEnrolledCourse = async (token) => {
-  try {
-    const response = await fetch(
-      `${API_URL}course-enroll/my-enrolled-courses`,
-      {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
+  const response = await fetch(`${API_URL}users/me/my-enrolled-courses`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      return {
-        status: "fail",
-        message: data.message || "Erreur lors de la récupération du progrès",
-      };
-    }
-
-    return data;
-  } catch (error) {
-    return {
-      status: "error",
-      message: "Erreur réseau ou serveur",
-    };
-  }
+  const data = await response.json();
+  console.log(data);
+  return data;
 };
 
 export const getEnrolledCoursesStats = async (token) => {

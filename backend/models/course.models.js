@@ -7,7 +7,11 @@ const courseSchema = new mongoose.Schema(
     slug: { type: String, unique: true },
     description: String,
     imageUrl: String,
-    status: { type: String, enum: ["draft", "published"], default: "draft" },
+    status: {
+      type: String,
+      enum: ["draft", "published", "pending"],
+      default: "draft",
+    },
     level: {
       type: String,
       uppercase: true,
@@ -65,6 +69,7 @@ courseSchema.index({
   tags: "text",
 });
 courseSchema.virtual("revenu").get(function () {
+  console.log(this.totalStudent);
   return this.price * this.totalStudent;
 });
 

@@ -7,6 +7,7 @@ const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
 const mongoose = require("mongoose");
 const Interaction = require("../models/interaction.model");
+const axios = require("axios");
 const isSectionCompleted = (lecture, completedLectures) => {
   const lectureId = lecture.map((obj) => obj._id);
   return lectureId.every((element) => completedLectures.includes(element));
@@ -124,7 +125,7 @@ exports.enroll = catchAsync(async (req, res, next) => {
       path: "sections",
       populate: { path: "lectures" },
     })
-    .select("sections")
+    .select("sections price")
     .lean();
 
   if (!course) {
@@ -135,26 +136,33 @@ exports.enroll = catchAsync(async (req, res, next) => {
     return next(new AppError("Ce cours n'a pas de sections", 400));
   }
 
-  // Trouver la première section et le premier cours
-  const firstSection = course.sections[0]._id;
-  const firstLecture = course.sections[0].lectures[0]._id;
+  if (course.price === 0) {
+    const firstSection = course.sections[0]._id;
+    const firstLecture = course.sections[0].lectures[0]._id;
 
-  // Créer le progrès
-  const progress = await Progress.create({
-    currentSection: firstSection,
-    currentLecture: firstLecture,
-  });
+    // Créer le progrès
+    const progress = await Progress.create({
+      currentSection: firstSection,
+      currentLecture: firstLecture,
+    });
 
-  // Créer l'inscription
-  enrollment = await Enrollment.create({
-    courseId: courseId,
-    studentId: userId,
-    progress,
-  });
+    // Créer l'inscription
+    enrollment = await Enrollment.create({
+      courseId: courseId,
+      studentId: userId,
+      progress,
+    });
 
-  res.status(201).json({
-    status: "success",
-    enrollment,
+    return res.status(201).json({
+      status: "success",
+      enrollment,
+    });
+  }
+  res.status(200).json({
+    status: "payment_required",
+    message: "Paiement requis pour s'inscrire au cours",
+    courseId,
+    amount: course.price,
   });
 });
 
@@ -200,6 +208,39 @@ exports.getProgress = catchAsync(async (req, res, next) => {
     status: "success",
     progress: enrollment.progress,
   });
+});
+
+exports.pay = catchAsync(async (req, res, next) => {
+  const url = "https://developers.flouci.com/api/generate_payment";
+  const { amount } = req.body;
+  const payload = {
+    app_token: process.env.APP_TOKEN,
+    app_secret: process.env.APP_SECRET,
+    amount: amount,
+    accept_card: "true",
+    session_timeout_secs: 1200,
+    success_link: "http://localhost:8080/api/v1/success",
+    fail_link: "http://localhost:8080/api/v1/fail",
+    developer_tracking_id: "dfee00a7-1605-4367-88ed-fcd045306c61",
+  };
+  await axios
+    .post(url, payload)
+    .then((result) => res.send(result.data).catch((err) => console.error(err)));
+});
+
+exports.verify = catchAsync(async (req, res, next) => {
+  const { payment_id } = req.params;
+  const url = `https://developers.flouci.com/api/verify_payment/${payment_id}`;
+  await axios
+    .get(
+      url,
+      (headers = {
+        apppublic: process.env.APP_TOKEN,
+        appsecret: process.env.APP_SECRET,
+      })
+    )
+    .then((result) => res.send(result))
+    .catch((err) => console.error(err));
 });
 
 // exports.getMyEnrolledCourse = catchAsync(async (req, res, next) => {

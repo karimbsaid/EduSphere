@@ -36,11 +36,12 @@ progressSchema.post("save", async function (doc) {
       if (!course) return;
 
       const interactions = course.tags.map((tag) =>
-        Interaction.findOneAndUpdate(
-          { student: enrollment.studentId, feature: tag },
-          { interactionType: "complete", updatedAt: new Date() }, // Correction ici
-          { upsert: true, new: true }
-        )
+        Interaction.create({
+          student: enrollment.studentId,
+          interactionType: "complete",
+          feature: tag,
+          weight: 5,
+        })
       );
 
       await Promise.all(interactions);

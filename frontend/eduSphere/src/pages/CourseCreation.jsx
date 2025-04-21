@@ -20,6 +20,8 @@ import {
 import { useParams } from "react-router-dom";
 import CourseResources from "../features/course/courseCreation/CourseResources";
 import { useAuth } from "../context/authContext";
+import { storeDocuments } from "../services/apiSplitter";
+import Spinner from "../ui/Spinner";
 const steps = [
   "Course Details",
   "Curriculum",
@@ -43,6 +45,7 @@ export default function CourseCreation() {
     price: 0,
     resources: [],
     isEdit: false,
+    faq: [],
   });
   const { courseId } = useParams();
   const { user } = useAuth();
@@ -117,6 +120,7 @@ export default function CourseCreation() {
     const fetchCourseDetail = async () => {
       try {
         const { course } = await getCourseDetailEdit(courseId, token);
+        console.log("get course detail ");
         setCourseData({
           title: course.title,
           description: course.description,
@@ -159,18 +163,22 @@ export default function CourseCreation() {
   const handleSubmit = async () => {
     try {
       setLoading(true);
-      console.log(isLoading);
+      console.log("Submitting...");
+
+      // Appel asynchrone pour la création ou la mise à jour du cours
       if (courseId) {
-        handleUpdateCourse();
+        await handleUpdateCourse(); // Assurez-vous d'utiliser await pour attendre la fin de la mise à jour
       } else {
-        handleCreateCourse();
+        await handleCreateCourse(); // Assurez-vous d'utiliser await pour attendre la fin de la création
       }
-      setLoading(false);
-      console.log(isLoading);
     } catch (err) {
+      console.error("Erreur lors de la soumission : ", err);
+    } finally {
+      // Assurez-vous de réinitialiser l'état de loading après la fin du processus
       setLoading(false);
     }
   };
+
   const handleCourseDataChange = (field, value) => {
     setCourseData((prev) => {
       if (courseId) {
@@ -234,6 +242,10 @@ export default function CourseCreation() {
         );
       }
     }
+    if (courseData.faq) {
+      const response = await storeDocuments(courseData.faq);
+      console.log(response);
+    }
   };
 
   const handleUpdateCourse = async () => {
@@ -291,6 +303,9 @@ export default function CourseCreation() {
         if (res.updated) {
           await updateResource(res._id, token, res);
         }
+      }
+      if (courseData.faq) {
+        const response = await storeDocuments(courseData.faq);
       }
     } catch (error) {
       console.error("Erreur lors de la mise à jour :", error);
@@ -381,13 +396,18 @@ export default function CourseCreation() {
               : "bg-black"
           }`}
         >
-          {isLoading
-            ? courseId
-              ? "Modification..."
-              : "Création..."
-            : currentStep === steps.length - 1
-            ? "Finish"
-            : "Next"}
+          {isLoading ? (
+            <div className="flex items-center">
+              <Spinner size="sm" />
+              <span className="ml-2">
+                {courseId ? "Modification..." : "Création..."}
+              </span>
+            </div>
+          ) : currentStep === steps.length - 1 ? (
+            "Finish"
+          ) : (
+            "Next"
+          )}
 
           <HiChevronRight className="ml-2 h-4 w-4" />
         </button>

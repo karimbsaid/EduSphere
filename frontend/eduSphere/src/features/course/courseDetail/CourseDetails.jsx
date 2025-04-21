@@ -6,8 +6,6 @@ import Card from "../../../ui/Card";
 import { convertSecondToTime } from "../../../utils/convertSecondToTime";
 
 export default function CourseCard({ course }) {
-  console.log(course);
-
   const { hours, minutes, seconds } = convertSecondToTime(course.totalDuration);
   const formattedDuration = hours
     ? `${hours} hours`

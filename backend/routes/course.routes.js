@@ -6,21 +6,34 @@ const resourceController = require("../controllers/resource.controller");
 const reviewRouter = require("./review.routes");
 const sectionRouter = require("./section.routes");
 const resourceRouter = require("./resource.routes");
+router.get("/stats", courseController.getStatistics);
+router.get("/recommend", auth.protect, courseController.recommend);
 
-router.get("/my-courses-stats", auth.protect, courseController.getMyCourses);
-
+// router.get("/my-courses-stats", auth.protect, courseController.getMyCourses);
+router.get("/courses-stats", courseController.getCourseStats);
 router.post("/", auth.protect, courseController.createCourse);
 router.patch("/:courseId", courseController.updateCourse);
 router.delete("/:courseId", courseController.deleteCourse);
 
 // Récupérer tous les cours
-router.get("", courseController.getAllCourses);
+router.get("", auth.optionalProtect, courseController.getAllCourses);
+router.get(
+  "/top-five",
+  courseController.getTopPopularCourses,
+  courseController.getAllCourses
+);
 
 // Récupérer un cours spécifique
 router.get(
   "/:courseId",
   auth.optionalProtect,
   courseController.getCourseDetails
+);
+router.patch(
+  "/:courseId/approuverejet",
+  auth.protect,
+  auth.restrictTo("admin"),
+  courseController.accepteRejetCours
 );
 router.get(
   "/:courseId/edit",
@@ -29,7 +42,6 @@ router.get(
   courseController.getCourseDetails
 );
 
-router.get("/recommend", auth.protect, courseController.recommend);
 router.post("/:courseId/resources", resourceController.addResource);
 router.patch("/resources/:resourceId", resourceController.updateResource);
 //nested route

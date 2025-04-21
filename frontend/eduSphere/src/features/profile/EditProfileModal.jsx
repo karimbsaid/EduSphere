@@ -9,14 +9,11 @@ const EditProfileModal = ({
   handleSubmit,
   setIsDialogOpen,
 }) => {
+  console.log(formData);
   const [previewImage, setPreviewImage] = useState(
     formData.avatar || "/placeholder.svg"
   );
-  useEffect(() => {
-    if (formData.avatar) {
-      setPreviewImage(formData.avatar);
-    }
-  }, [formData.avatar]);
+
   const fileInputRef = useRef(null);
 
   if (!isOpen) return null;

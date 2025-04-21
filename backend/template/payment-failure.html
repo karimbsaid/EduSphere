@@ -1,0 +1,27 @@
+<!-- templates/payment-failure.html -->
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Paiement Échoué</title>
+    <link rel="stylesheet" href="../template/styles/payment.css" />
+  </head>
+  <body>
+    <div class="card">
+      <div class="status-icon error">❌</div>
+      <h1 class="error">Paiement Échoué</h1>
+
+      <div class="course-info">
+        <h2>{{title}}</h2>
+        <p>Erreur lors du traitement de votre paiement</p>
+      </div>
+
+      <p>{{errorMessage}}</p>
+
+      <a href="{{retryLink}}" class="button error-btn">
+        Réessayer le paiement
+      </a>
+    </div>
+  </body>
+</html>

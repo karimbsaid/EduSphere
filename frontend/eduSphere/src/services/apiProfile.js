@@ -7,13 +7,74 @@ export const getMyprofile = async (token) => {
       Authorization: `Bearer ${token}`,
     },
   });
+  const data = await response.json();
+  if (data.status === 404) {
+    return data;
+  }
+  if (!response.ok)
+    throw new Error(data.message || "Erreur lors de la fetch du profile");
+  return data;
+};
 
-  if (!response.ok) throw new Error("Erreur lors de la fetch du profile");
+export const getAllUsers = async (token, query = {}) => {
+  const queryString = new URLSearchParams(query).toString();
+
+  const response = await fetch(`${API_URL}users?${queryString}`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return response.json();
+};
+
+export const editUser = async (token, userData) => {
+  console.log(userData);
+  const { _id, ...other } = userData;
+  const response = await fetch(`${API_URL}users/${_id}`, {
+    method: "PATCH",
+    body: JSON.stringify(userData),
+
+    headers: {
+      "Content-Type": "application/json",
+
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return response.json();
+};
+
+export const addUser = async (token, userData) => {
+  console.log(userData);
+  const response = await fetch(`${API_URL}users`, {
+    method: "POST",
+    body: JSON.stringify(userData),
+
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return response.json();
+};
+
+export const deleteUser = async (token, userId) => {
+  const response = await fetch(`${API_URL}users/${userId}`, {
+    method: "DELETE",
+
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
   return response.json();
 };
 
 export const updateProfile = async (profileData, token) => {
-  console.log(profileData.email);
+  console.log(token);
   const formData = new FormData();
   formData.append("contactNumber", profileData.phone);
   formData.append("email", profileData.email);

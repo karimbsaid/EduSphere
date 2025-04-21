@@ -8,6 +8,9 @@ const cloudinary = require("../config/cloudinary");
 const slugify = require("slugify");
 const APIFeatures = require("../utils/apiFeatures");
 const Interaction = require("../models/interaction.model");
+const User = require("../models/user.models");
+const { createInteraction } = require("../utils/interactionService");
+const EmailService = require("../utils/emailService");
 // Fonction pour télécharger un fichier sur Cloudinary
 const uploadToCloudinary = async (file, folder) => {
   return await cloudinary.uploader.upload(file.tempFilePath, {
@@ -45,16 +48,38 @@ const deleteFolderOnCloudinary = async (folderPath) => {
 
 //get all course
 
+exports.getTopPopularCourses = (req, res, next) => {
+  req.query.limit = "5";
+  req.query.sort = "-totalStudent";
+  req.query.fields = "title,totalStudent,instructor";
+  next();
+};
+
 exports.getAllCourses = async (req, res) => {
+  let userId, userRole;
+
+  // Vérification si req.user existe
+  if (req.user) {
+    userId = req.user._id;
+    userRole = req.user.role;
+  }
+  let totalDocuments;
+
+  let courseFilter = {};
+  if (userRole === "instructor") {
+    courseFilter = { instructor: userId };
+  }
+
+  totalDocuments = await Course.countDocuments(courseFilter);
+
   const features = new APIFeatures(
-    Course.find()
+    Course.find(courseFilter)
       .populate({
         path: "instructor",
         select: "name additionalDetails",
         populate: { path: "additionalDetails" },
       })
-      .select("-sections -resources ")
-      .lean({ virtuals: false }),
+      .select("-sections -resources"),
     req.query
   )
     .filter()
@@ -63,19 +88,21 @@ exports.getAllCourses = async (req, res) => {
     .limitFields()
     .paginate();
 
-  const courses = await features.query;
+  let courses = await features.query;
 
-  if (req.query.search && req.user._id) {
-    await Interaction.findOneAndUpdate(
-      { student: req.user._id, feature: req.query.search }, // Correction ici
-      { interactionType: "search", updatedAt: new Date() },
-      { upsert: true, new: true }
-    );
+  if (req.query.sort && req.query.sort.includes("revenu")) {
+    const sortOrder = req.query.sort.startsWith("-") ? -1 : 1;
+    courses = courses.sort((a, b) => (a.revenu - b.revenu) * sortOrder);
+  }
+  console.log(req.user);
+  if (req.query.search && req.user?._id) {
+    await createInteraction(req.user._id, "search", req.query.search);
   }
 
   res.status(200).json({
     status: "success",
     results: courses.length,
+    totalDocuments,
     courses,
   });
 };
@@ -107,13 +134,7 @@ exports.getCourseDetails = catchAsync(async (req, res) => {
 
   if (req.user && req.user._id && course?.tags?.length > 0 && !isEditRoute) {
     await Promise.all(
-      course.tags.map((tag) =>
-        Interaction.findOneAndUpdate(
-          { student: req.user._id, feature: tag },
-          { interactionType: "view", updatedAt: new Date() },
-          { upsert: true, new: true }
-        )
-      )
+      course.tags.map((tag) => createInteraction(req.user._id, "view", tag))
     );
   }
 
@@ -410,36 +431,170 @@ exports.getLecture = catchAsync(async (req, res) => {
   return res.status(200).json(lecture);
 });
 
-exports.getMyCourses = catchAsync(async (req, res) => {
-  res.json(stats);
+exports.getCourseStats = catchAsync(async (req, res, next) => {
+  let courses;
+  const user = await User.findById(req.user._id);
+
+  if (!user) {
+    return next(new AppError("Utilisateur non trouvé", 404));
+  }
+
+  // Si l'utilisateur est admin, récupérer tous les cours
+  if (user.role === "admin") {
+    courses = await Course.find()
+      .populate({
+        path: "instructor",
+        select: "name email",
+      })
+      .populate({
+        path: "sections",
+        select: "title lectures",
+      });
+  }
+  // Si c'est un instructeur, récupérer seulement ses cours
+  else if (user.role === "instructor") {
+    courses = await Course.find({ instructor: user._id }).populate({
+      path: "sections",
+      select: "title lectures",
+    });
+  }
+  // Si c'est un étudiant, retourner une erreur
+  else {
+    return next(new AppError("Vous n'avez pas accès à cette ressource", 403));
+  }
+
+  const coursesWithFirstInfo = await Promise.all(
+    courses.map(async (course) => {
+      const { firstSectionId, firstLectureId } =
+        await course.getFirstSectionAndLecture();
+      return {
+        ...course.toObject(),
+        firstSectionId,
+        firstLectureId,
+      };
+    })
+  );
+
+  res.status(200).json({
+    status: "success",
+    results: coursesWithFirstInfo.length,
+    data: {
+      courses: coursesWithFirstInfo,
+    },
+  });
 });
 
 exports.recommend = catchAsync(async (req, res, next) => {
-  const studentId = req.user._id;
+  const userId = req.user._id;
 
-  // 🔹 Récupérer les interactions des 7 derniers jours
-  const interactions = await Interaction.find({
-    student: studentId,
-    updatedAt: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
-  });
+  const interactions = await Interaction.find({ student: userId });
 
-  // 🔹 Extraire les tags enregistrés (des recherches et vues)
-  const tags = [...new Set(interactions.map(({ feature }) => feature))];
-
-  if (tags.length === 0) {
-    return res.json({ recommendations: [] }); // Pas de recommandations si aucun tag n'a été enregistré
+  if (!interactions || interactions.length === 0) {
+    return res.status(404).json({
+      status: "fail",
+      message: "Aucune interaction trouvée pour cet utilisateur",
+    });
   }
 
-  // 🔹 Trouver les cours correspondant aux tags
-  const recommendations = await Course.find({
-    tags: { $in: tags },
-    status: "published",
-  })
-    .sort({ createdAt: -1 }) // Trier par date de création pour recommander les plus récents
-    .limit(10);
+  const tagScores = interactions.reduce((scores, interaction) => {
+    const { feature: tag, weight } = interaction;
 
-  res.json({ recommendations });
+    if (scores[tag]) {
+      scores[tag] += weight;
+    } else {
+      scores[tag] = weight;
+    }
+
+    return scores;
+  }, {});
+
+  const popularTags = Object.keys(tagScores).sort(
+    (a, b) => tagScores[b] - tagScores[a]
+  );
+
+  const recommendedCourses = await Course.find({
+    tags: { $in: popularTags },
+  })
+    .populate("instructor", "name")
+    .select(
+      "title tags instructor imageUrl level price totalStudent averageRating"
+    );
+
+  recommendedCourses.sort((a, b) => {
+    const scoreA = a.tags.reduce((sum, tag) => sum + (tagScores[tag] || 0), 0);
+    const scoreB = b.tags.reduce((sum, tag) => sum + (tagScores[tag] || 0), 0);
+    return scoreB - scoreA;
+  });
+
+  res.status(200).json({
+    status: "success",
+    results: recommendedCourses.length,
+    courses: recommendedCourses,
+  });
 });
+
+exports.accepteRejetCours = catchAsync(async (req, res, next) => {
+  const { courseId } = req.params;
+  const cours = await Course.findById(courseId).populate({
+    path: "instructor",
+    select: "email name",
+  });
+  const { instructor } = cours;
+  const emailService = new EmailService(instructor);
+
+  const { status, message } = req.body;
+  let text = "";
+  const updatedCourse = await Course.findByIdAndUpdate(
+    courseId,
+    { status },
+    {
+      new: true,
+      runValidators: true,
+    }
+  );
+  if (status === "pending") {
+    text =
+      "désole votre cour est refusé tu trouve ci desous tous les détails" +
+      "\n";
+    message;
+    await emailService.sendRejetAcceptationEmail("refus", text);
+  } else if (status === "published") {
+    text = "votre cour est approuvé" + message;
+    await emailService.sendRejetAcceptationEmail("success", text);
+  }
+  res.status(201).json({ status: "ok" });
+});
+
+exports.getStatistics = async (req, res) => {
+  try {
+    const totalCourses = await Course.countDocuments();
+
+    const coursesByCategory = await Course.aggregate([
+      {
+        $group: {
+          _id: "$category",
+          totalCourses: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const totalInstructors = await User.countDocuments({ role: "instructor" });
+
+    const totalStudents = await User.countDocuments({ role: "student" });
+
+    res.status(200).json({
+      status: "success",
+      data: {
+        totalCourses,
+        coursesByCategory,
+        totalInstructors,
+        totalStudents,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Erreur serveur", error });
+  }
+};
 
 // exports.getMyCourses = catchAsync(async (req, res) => {
 //   const stats = await Course.aggregate([

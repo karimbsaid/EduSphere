@@ -16,6 +16,11 @@ const interactionSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    weight: {
+      type: Number,
+      required: true,
+      default: 1,
+    },
   },
   {
     timestamps: true,

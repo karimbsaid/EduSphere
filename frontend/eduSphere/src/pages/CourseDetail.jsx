@@ -8,79 +8,84 @@ import CourseCard from "../features/course/courseDetail/CourseDetails";
 import CourseSection from "../features/course/courseDetail/CourseSection";
 import { getCourseReviews } from "../services/apiReview";
 import ReviewCard from "../features/course/courseDetail/ReviewCard";
+import { pay } from "../services/apiPayment";
+import Spinner from "../ui/Spinner"; // 👉 Assure-toi que ce chemin est correct
 
 function CourseDetail() {
   const { courseId } = useParams();
   const [courseDetail, setCourseDetail] = useState({});
   const [reviews, setReviews] = useState([]);
   const [isEnrolled, setIsEnrolled] = useState(false);
-  const [progress, setProgress] = useState(null);
   const [openSection, setOpenSection] = useState("section-1");
   const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
 
   const navigate = useNavigate();
   const { user } = useAuth();
   const token = user?.token;
 
   useEffect(() => {
-    const fetchReviews = async () => {
+    const fetchData = async () => {
+      setIsLoading(true);
       try {
-        const data = await getCourseReviews(courseId);
-
-        if (data.status === "success") {
-          console.log("ok");
-          setReviews(data.reviews); // Assurez-vous que le backend retourne `reviews` dans `data`
-          setError(null);
-        } else if (data.status === "fail") {
-          setReviews([]);
-          setError(data.message); // "Aucun avis trouvé pour ce cours"
-        } else {
-          setError("Réponse inattendue du serveur");
-          setReviews([]);
+        const [courseData, reviewData] = await Promise.all([
+          getCourseDetail(courseId),
+          getCourseReviews(courseId),
+        ]);
+        if (courseData.status === "fail") {
+          navigate("/notfound");
+          return;
         }
-      } catch (err) {
-        setError(err.message || "Une erreur s'est produite");
-        setReviews([]);
-      } finally {
-        setLoading(false);
-      }
-    };
 
-    const loadCourse = async () => {
-      try {
-        const { course } = await getCourseDetail(courseId);
+        const course = courseData.course;
+
         if (token) {
           const progressResponse = await getProgress(courseId, token);
-
           if (progressResponse.status === "success") {
             setIsEnrolled(true);
             course.progress = progressResponse.progress;
           }
         }
+
         setCourseDetail(course);
-      } catch (error) {
-        console.error("Erreur lors du chargement du cours:", error);
+
+        if (reviewData.status === "success") {
+          setReviews(reviewData.reviews);
+          setError(null);
+        } else {
+          setReviews([]);
+          setError(reviewData.message || "Erreur lors du chargement des avis");
+        }
+      } catch (err) {
+        if (err.status === 404) {
+          navigate("/notfound");
+        } else {
+          setError("Une erreur s'est produite, veuillez réessayer.");
+        }
+
+        setReviews([]);
+      } finally {
+        setIsLoading(false);
       }
     };
 
-    loadCourse();
-    fetchReviews();
-  }, [courseId, token]);
+    fetchData();
+  }, [courseId, token, navigate]);
 
   const handleEnrollCourse = async () => {
-    console.log("here");
+    if (courseDetail.price > 0) {
+      const response = await pay(courseDetail._id, token);
+      window.open(response.paymentUrl);
+    }
     const response = await enroll(courseDetail._id, token);
     if (response.status === "success") {
-      const enrollment = response.enrollment;
-      const progress = enrollment.progress;
-      const currentSection = progress.currentSection;
-      const currentLecture = progress.currentLecture;
+      const { progress } = response.enrollment;
       navigate(
-        `/course/${courseId}/chapter/${currentSection}/lecture/${currentLecture}`
+        `/course/${courseId}/chapter/${progress.currentSection}/lecture/${progress.currentLecture}`
       );
     }
   };
+
   const handleContinueWatching = () => {
     const currentSection = courseDetail.progress?.currentSection;
     const currentLecture = courseDetail.progress?.currentLecture;
@@ -88,35 +93,27 @@ function CourseDetail() {
       `/course/${courseId}/chapter/${currentSection}/lecture/${currentLecture}`
     );
   };
+
   const handleSectionToggle = (sectionId) => {
     setOpenSection(openSection === sectionId ? null : sectionId);
   };
-  const { quizCount, videoCount } = courseDetail.sections?.reduce(
-    (counts, section) => {
-      section.lectures?.forEach((lecture) => {
-        if (lecture.type === "quiz") {
-          counts.quizCount += 1;
-        } else if (lecture.type === "video") {
-          counts.videoCount += 1;
-        }
-      });
-      return counts;
-    },
-    { quizCount: 0, videoCount: 0 }
-  ) || { quizCount: 0, videoCount: 0 };
-  const totalResource = courseDetail.resources?.length;
 
   const handleWatchCourse = () => {
     if (token) {
-      if (isEnrolled) {
-        handleContinueWatching();
-      } else {
-        handleEnrollCourse();
-      }
+      isEnrolled ? handleContinueWatching() : handleEnrollCourse();
     } else {
       navigate("/login");
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen bg-gray-100">
+        <Spinner size="lg" />
+        <div className="ml-4 text-lg">Chargement...</div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -135,16 +132,12 @@ function CourseDetail() {
         </div>
         <div className="md:col-span-2">
           <CourseIncludes
-            isEnrolled={isEnrolled}
-            myProgress={courseDetail?.progress?.progressPercentage}
-            totalVideo={videoCount}
-            totalResource={totalResource}
-            totalQuiz={quizCount}
+            courseDetail={courseDetail}
             handleWatchCourse={handleWatchCourse}
           />
         </div>
       </div>
-      <h1 className="font-bold my-2 ml-2">les reviews des nos etudiants</h1>
+      <h1 className="font-bold my-2 ml-2">Les reviews de nos étudiants</h1>
       <div className="mx-2">
         {reviews.map((rev, index) => (
           <ReviewCard key={index} review={rev} />

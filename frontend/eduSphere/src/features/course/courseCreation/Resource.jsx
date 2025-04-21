@@ -1,8 +1,11 @@
 /* eslint-disable react/prop-types */
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Input from "../../../ui/Input";
 import FileUploader from "../../../components/FileUploader";
-import { HiTrash } from "react-icons/hi2";
+import { HiPlus, HiTrash } from "react-icons/hi2";
+import { splitPdfFile } from "../../../services/apiSplitter";
+import Modal from "../../../ui/Modal";
+import Spinner from "../../../ui/Spinner";
 
 export default function Resource({ resource, setCourseData, resourceIndex }) {
   const handleEditResource = (field, value) => {
@@ -33,6 +36,8 @@ export default function Resource({ resource, setCourseData, resourceIndex }) {
     handleEditResource("file", file);
   };
 
+  const isPDF = resource.file?.type === "application/pdf";
+
   return (
     <div className="flex flex-col space-y-4 p-4 border m-2 rounded-md">
       <div className="flex items-center justify-between  space-x-6 ">
@@ -61,6 +66,52 @@ export default function Resource({ resource, setCourseData, resourceIndex }) {
         file={resource.file || resource.resourceUrl}
         onFileSelect={handleFileSelect}
       />
+
+      {isPDF && (
+        <>
+          <div className="flex items-center space-x-2 mb-2">
+            <input
+              type="checkbox"
+              id="isSplitter"
+              checked={resource.isSpliter === true}
+              onChange={(e) =>
+                handleEditResource("isSpliter", e.target.checked ? true : false)
+              }
+              className="appearance-none w-5 h-5 border border-gray-300 rounded checked:bg-black checked:border-black"
+            />
+            <label htmlFor="gratuit">extract faq depuis ce document</label>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <Input
+              label="Page de début (optionnel)"
+              type="number"
+              placeholder="ex: 5"
+              value={resource.debut_document || ""}
+              onChange={(e) =>
+                handleEditResource("debut_document", e.target.value)
+              }
+            />
+            <Input
+              label="Taille min titre (optionnel)"
+              type="number"
+              placeholder="ex: 12"
+              value={resource.heading_font_threshold || ""}
+              onChange={(e) =>
+                handleEditResource("heading_font_threshold", e.target.value)
+              }
+            />
+            <Input
+              label="Espace entre mots (optionnel)"
+              type="number"
+              placeholder="ex: 1.5"
+              value={resource.space_threshold || ""}
+              onChange={(e) =>
+                handleEditResource("space_threshold", e.target.value)
+              }
+            />
+          </div>
+        </>
+      )}
     </div>
   );
 }

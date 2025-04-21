@@ -2,6 +2,8 @@ const mongoose = require("mongoose");
 const validator = require("validator");
 const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
+const Course = require("./course.models");
+const UserDetails = require("./userDetails.model");
 
 const userSchema = new mongoose.Schema(
   {
@@ -27,6 +29,27 @@ const userSchema = new mongoose.Schema(
       type: String,
       enum: ["student", "instructor", "admin"],
       default: "student",
+    },
+    permissions: {
+      type: [String],
+      default: function () {
+        switch (this.role) {
+          case "admin":
+            return [
+              "createCourse",
+              "editCourse",
+              "deleteCourse",
+              "addUser",
+              "editUser",
+              "deleteUser",
+            ];
+          case "instructor":
+            return ["createCourse", "editCourse", "deleteCourse"];
+          case "student":
+          default:
+            return ["enrollCourse"];
+        }
+      },
     },
     additionalDetails: {
       type: mongoose.Schema.Types.ObjectId,
@@ -81,6 +104,31 @@ userSchema.virtual("courses", {
       select: "title lectures",
     },
   },
+});
+
+userSchema.pre(/^find/, function (next) {
+  this.populate("additionalDetails");
+
+  next();
+});
+
+userSchema.pre("deleteOne", async function (next) {
+  console.log("pre delete");
+  const user = await this.model.findOne(this.getQuery());
+  console.log("user", user);
+  if (!user) return next();
+
+  const courses = await Course.find({ instructor: user._id });
+  console.log(courses);
+  for (const course of courses) {
+    console.log("okk");
+    await Course.deleteCourse(course._id);
+  }
+  if (user.additionalDetails) {
+    await UserDetails.findByIdAndDelete(user.additionalDetails);
+  }
+
+  next();
 });
 
 module.exports = mongoose.model("User", userSchema);
