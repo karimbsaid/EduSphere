@@ -7,6 +7,11 @@ const {
 const resourceSchema = new mongoose.Schema({
   title: { type: String, required: true },
   resourceUrl: String,
+  draftVersion: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Lecture",
+    default: null,
+  },
 });
 
 resourceSchema.statics.deleteResource = async function (resourceId) {

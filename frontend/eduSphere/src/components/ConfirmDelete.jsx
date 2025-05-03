@@ -37,6 +37,7 @@ export default function ConfirmDelete({
           disabled={!isValid}
           onClick={() => {
             onConfirm();
+            onClose();
           }}
         />
       </div>

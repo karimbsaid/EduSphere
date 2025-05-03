@@ -10,6 +10,10 @@ import { getMyprofile } from "../services/apiProfile";
 import UserPanel from "./UserPanel";
 import { HiX } from "react-icons/hi";
 import { useNavigate } from "react-router-dom";
+import { Modal } from "../ui/ModalOff";
+import { HiStar } from "react-icons/hi2";
+import AddReview from "../features/review/AddReview";
+import Loading from "./Loading";
 
 export default function SideBar({ courseId, sectionId, onClose }) {
   const { user } = useAuth();
@@ -19,17 +23,17 @@ export default function SideBar({ courseId, sectionId, onClose }) {
     progress: {},
     resources: [],
   });
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [userDetails, setUserDetails] = useState({});
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchData = async () => {
       if (token) {
-        setIsLoading(true);
         // Vérifier courseId ici
         try {
-          const { user } = await getMyprofile(token);
+          // const { user } = await getMyprofile(token);
+          // console.log("user", user);
           if (courseId && sectionId) {
             const [courseData, resourcesData, progressData] = await Promise.all(
               [
@@ -45,7 +49,7 @@ export default function SideBar({ courseId, sectionId, onClose }) {
             });
           }
 
-          setUserDetails(user);
+          // setUserDetails(user);
         } catch (error) {
           console.error("Erreur de chargement:", error);
         } finally {
@@ -56,6 +60,9 @@ export default function SideBar({ courseId, sectionId, onClose }) {
 
     fetchData();
   }, [courseId, sectionId, token]);
+  if (isLoading) {
+    return <Loading />;
+  }
 
   return (
     <aside
@@ -64,7 +71,7 @@ export default function SideBar({ courseId, sectionId, onClose }) {
       <div className="p-4 flex items-center justify-between ">
         <h1
           className="text-lg font-bold cursor-pointer"
-          onClick={() => navigate("/accueil")}
+          onClick={() => navigate("/")}
         >
           EduSphere
         </h1>
@@ -77,9 +84,26 @@ export default function SideBar({ courseId, sectionId, onClose }) {
       </div>
       <nav className="flex-1 overflow-y-auto space-y-1">
         {isLoading && <span>loading...</span>}
-        {courseId ? <CourseTabs data={course} /> : <MainNavigation />}
+        {courseId && sectionId ? (
+          <CourseTabs data={course} />
+        ) : (
+          <MainNavigation />
+        )}
       </nav>
-      <UserPanel userDetail={userDetails} />
+      {courseId && sectionId && (
+        <Modal>
+          <Modal.Open opens="review-modal">
+            <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
+              <HiStar className="w-5 h-5" />
+              Laisser un avis
+            </button>
+          </Modal.Open>
+          <Modal.Window name="review-modal">
+            <AddReview />
+          </Modal.Window>
+        </Modal>
+      )}
+      {token && <UserPanel userDetail={user} />}
     </aside>
   );
 }

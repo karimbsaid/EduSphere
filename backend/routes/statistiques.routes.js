@@ -2,6 +2,21 @@ const express = require("express");
 const router = express.Router();
 const auth = require("../middleware/auth");
 const statistiqueController = require("../controllers/statistique.controller");
+const statsController = require("../controllers/stats.controller");
+const allstatscontroller = require("../controllers/statss.controller");
+const inststatsController = require("../controllers/instructorstatscontroller");
+router.get("/admin-stats", statsController.getAdminStats);
+router.get(
+  "/instructor-stats",
+  auth.protect,
+  inststatsController.getInstructorStats
+);
+router.get(
+  "/stats",
+  auth.protect,
+  auth.restrictTo("Admin", "Instructor"),
+  allstatscontroller.getStats
+);
 router.use(auth.protect);
 router.get("/revenu", statistiqueController.getRevenueStats);
 router.get("/course-distribution", statistiqueController.getCourseDistribution);

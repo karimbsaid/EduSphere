@@ -17,6 +17,7 @@ const questionSchema = new mongoose.Schema({
 });
 
 // Schéma principal des lectures
+
 const lectureSchema = new mongoose.Schema(
   {
     title: { type: String, required: true },
@@ -45,12 +46,18 @@ const lectureSchema = new mongoose.Schema(
         return this.type === "quiz";
       },
     },
+    draftVersion: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Lecture",
+      default: null, // Référence à la version copiée (si elle existe)
+    },
   },
   { timestamps: true }
 );
 
 lectureSchema.statics.deleteLectureWithCloudinary = async function (lectureId) {
   const lecture = await this.findById(lectureId);
+  console.log(lectureId);
   if (lecture.type === "video" && lecture.url) {
     const publicId = getPublicId(lecture.url);
     const res = await deleteResourceFromCloudinary(publicId, "video");

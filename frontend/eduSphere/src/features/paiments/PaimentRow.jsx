@@ -5,17 +5,13 @@ import { formatDate } from "../../utils/formatDate";
 import Badge from "../../ui/Badge";
 
 export default function PaimentRow({ payment }) {
+  console.log("payment", payment);
   const badgeVariant = {
     published: "success",
     draft: "warning",
     pending: "secondary",
   };
 
-  const badgeCategoryVariant = {
-    pending: "warning",
-    paid: "success",
-    failed: "ghost",
-  };
   return (
     <>
       <Table.Row>

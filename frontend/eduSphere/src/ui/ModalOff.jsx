@@ -51,7 +51,7 @@ function Window({ children, name }) {
   if (name !== openName) return null;
 
   return createPortal(
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] overflow-y-auto">
+    <div className="modal fixed inset-0 bg-black/50 flex items-center justify-center z-[1000] overflow-y-auto">
       <div
         ref={modalElement}
         className="bg-white rounded-xl shadow-2xl p-8  max-w-4xl w-full mx-4 my-auto relative"
@@ -70,4 +70,4 @@ function Window({ children, name }) {
 Modal.Open = Open;
 Modal.Window = Window;
 
-export default Modal;
+export { Modal, ModalContext };

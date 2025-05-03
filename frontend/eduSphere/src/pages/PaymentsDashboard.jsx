@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/authContext";
 import { getAllPayments } from "../services/apiPayment";
-import GestionPayment from "../features/admin/GestionPayment";
 import Spinner from "../ui/Spinner";
 import Card from "../ui/Card";
 import PaimentTableOperation from "../features/paiments/PaimentTableOperation";

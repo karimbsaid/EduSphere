@@ -1,23 +1,28 @@
 import React, { useEffect, useRef, useState } from "react";
-import Modal from "../../ui/ModalOff";
+// import Modal from "../../ui/ModalOff";
 import Button from "../../ui/Button";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { FaFilter, FaSearch } from "react-icons/fa";
 import Input from "../../ui/Input";
 import FilterButtons from "../../components/FilterButtons";
 import DropDown from "../../ui/DropDownn";
 
 export default function CourseTableOperation() {
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [querySearch, setQuerySearch] = useState("");
   const inputRef = useRef(null);
   const sort = searchParams.get("sort") || "totalStudents";
   const filterOptions = [
-    { value: "all", label: "Tous" },
-    { value: "published", label: "Published" },
-    { value: "pending", label: "Pending" },
-    { value: "draft", label: "Draft" },
+    { value: "tous", label: "Tous" },
+    { value: "published", label: "Publié" },
+    { value: "pending", label: "en attente" },
+    { value: "draft", label: "brouillon" },
   ];
+
+  const handleCreateCourseNav = () => {
+    navigate("/my-courses/add");
+  };
 
   useEffect(() => {
     function handleKeyDown(e) {
@@ -38,8 +43,10 @@ export default function CourseTableOperation() {
     <>
       <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
         <div>
-          <h1>Gestion des cours</h1>
-          <h2>Gérez les cours de la plateforme</h2>
+          <h1 className="text-2xl font-bold text-gray-800 mb-6">
+            Gestion des cours
+          </h1>
+          <p className="text-slate-700">Gérez les cours de la plateforme</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="relative">
@@ -52,7 +59,7 @@ export default function CourseTableOperation() {
               onChange={(e) => setQuerySearch(e.target.value)}
             />
           </div>
-          <Button label="ajouter un cour" />
+          <Button label="ajouter un cour" onClick={handleCreateCourseNav} />
         </div>
       </div>
       <div className="flex justify-between">

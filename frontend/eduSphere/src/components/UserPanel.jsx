@@ -10,7 +10,8 @@ export default function UserPanel({ userDetail }) {
 
   const handleLogout = () => {
     logout();
-    console.log("deconnexion..");
+    navigate("/login");
+    // console.log("deconnexion..");
   };
   return (
     <div className="sticky bottom-0 bg-gray-800 p-4 border-t border-gray-700 flex justify-between items-center">
@@ -25,7 +26,7 @@ export default function UserPanel({ userDetail }) {
         />
         <div className="ml-3">
           <p className="text-sm font-medium">{userDetail.name}</p>
-          <p className="text-xs text-gray-400">{userDetail.role}</p>
+          <p className="text-xs text-gray-400">{userDetail?.role?.name}</p>
         </div>
       </div>
 

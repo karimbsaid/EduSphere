@@ -17,7 +17,8 @@ import {
   updateResource,
   getCourseDetailEdit,
 } from "../services/apiCourse";
-import { useParams } from "react-router-dom";
+import toast from "react-hot-toast";
+import { useNavigate, useParams } from "react-router-dom";
 import CourseResources from "../features/course/courseCreation/CourseResources";
 import { useAuth } from "../context/authContext";
 import { storeDocuments } from "../services/apiSplitter";
@@ -48,6 +49,7 @@ export default function CourseCreation() {
     faq: [],
   });
   const { courseId } = useParams();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const token = user.token;
 
@@ -67,10 +69,6 @@ export default function CourseCreation() {
           courseData.sections.every((section) => {
             const hasValidTitle = section.title.trim() !== "";
             const hasLectures = section.lectures.length > 0;
-            console.log(
-              "hasLectures",
-              section.lectures.every((lecture) => !lecture.deleted)
-            );
 
             if (!hasValidTitle || !hasLectures) return false;
 
@@ -106,7 +104,7 @@ export default function CourseCreation() {
         return (
           courseData.resources.every(
             (res) =>
-              res.title.trim() != "" &&
+              res?.title?.trim() != "" &&
               (res.file != null || res.resourceUrl != "")
           ) ?? false
         );
@@ -120,7 +118,6 @@ export default function CourseCreation() {
     const fetchCourseDetail = async () => {
       try {
         const { course } = await getCourseDetailEdit(courseId, token);
-        console.log("get course detail ");
         setCourseData({
           title: course.title,
           description: course.description,
@@ -163,18 +160,15 @@ export default function CourseCreation() {
   const handleSubmit = async () => {
     try {
       setLoading(true);
-      console.log("Submitting...");
 
-      // Appel asynchrone pour la création ou la mise à jour du cours
       if (courseId) {
-        await handleUpdateCourse(); // Assurez-vous d'utiliser await pour attendre la fin de la mise à jour
+        await handleUpdateCourse();
       } else {
-        await handleCreateCourse(); // Assurez-vous d'utiliser await pour attendre la fin de la création
+        await handleCreateCourse();
       }
     } catch (err) {
       console.error("Erreur lors de la soumission : ", err);
     } finally {
-      // Assurez-vous de réinitialiser l'état de loading après la fin du processus
       setLoading(false);
     }
   };
@@ -187,121 +181,100 @@ export default function CourseCreation() {
       return { ...prev, [field]: value };
     });
   };
-  // const handleCreateCourse = async () => {
-  //   setCourseStatus("loading");
-
-  //   const course = await createCourse(courseData, token);
-  //   setCourseStatus("success");
-  //   setSectionStatus("loading");
-  //   setVideoStatus("loading");
-  //   courseData.sections.map(async (sec) => {
-  //     const sectiondd = await createSection(course.data._id, sec.title);
-  //     sec.lectures.map(async (content) => {
-  //       await uploadLecture(course.data._id, sectiondd.data._id, content);
-  //     });
-  //   });
-  //   setSectionStatus("success");
-  //   setVideoStatus("success");
-  //   if (courseData.resources) {
-  //     courseData.resources.map(async (res) => {
-  //       const response = await addResource(
-  //         course.data._id,
-  //         res,
-  //         course.data.title
-  //       );
-  //     });
-  //   }
-  // };
 
   const handleCreateCourse = async () => {
-    // Création du cours
-    const course = await createCourse(courseData, token);
+    try {
+      const course = await createCourse(courseData, token);
 
-    // Pour chaque section
-    for (const sec of courseData.sections) {
-      const sectionRes = await createSection(course.data._id, sec.title);
-
-      // Pour chaque lecture dans la section
-      for (const content of sec.lectures) {
-        const lectureResponse = await uploadLecture(
+      for (const sec of courseData.sections) {
+        const sectionRes = await createSection(
+          token,
           course.data._id,
-          sectionRes.data._id,
-          content
+          sec.title
         );
-      }
-    }
 
-    // Pour chaque ressource, s'il y en a
-    if (courseData.resources) {
-      for (const res of courseData.resources) {
-        const resourceLabel = `Création de resource ${res.title}`;
-        const response = await addResource(
-          course.data._id,
-          res,
-          course.data.title
-        );
+        for (const content of sec.lectures) {
+          const lectureResponse = await uploadLecture(
+            token,
+            course.data._id,
+            sectionRes.data._id,
+            content
+          );
+        }
       }
-    }
-    if (courseData.faq) {
-      const response = await storeDocuments(courseData.faq);
-      console.log(response);
+      if (courseData.resources.length > 0) {
+        for (const res of courseData.resources) {
+          const resourceLabel = `Création de resource ${res.title}`;
+          const response = await addResource(
+            course.data._id,
+            res,
+            course.data.title,
+            token
+          );
+        }
+      }
+      if (courseData.faq.length > 0) {
+        const response = await storeDocuments(courseData.faq);
+      }
+      toast.success("Cours créé avec succès !");
+      navigate(`/course/${course.data._id}/preview`);
+    } catch (err) {
+      toast.error(`Erreur : ${err.message}`);
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleUpdateCourse = async () => {
     try {
-      // Mettre à jour le cours lui-même
       if (courseData.updated) {
-        console.log("course Updated");
-        await updateCourse(courseId, courseData);
+        await updateCourse(token, courseId, courseData);
       }
 
-      // Traiter les sections séquentiellement
       for (const sec of courseData.sections) {
-        console.log("sec updated", sec);
         if (sec.deleted) {
-          await deleteSection(courseId, sec._id);
-          continue; // Passer au traitement suivant
+          await deleteSection(courseId, sec._id, token);
+          continue;
         }
 
         let sectionId = sec._id;
 
         // Mise à jour de section existante
         if (sec.updated) {
-          await updateSection(courseId, sectionId, sec.title);
+          await updateSection(token, courseId, sectionId, sec.title);
         }
 
         // Création de nouvelle section
         if (sec.isNew) {
-          const newSection = await createSection(courseId, sec.title);
+          const newSection = await createSection(token, courseId, sec.title);
           sectionId = newSection.data._id; // Récupérer le vrai ID de la section
         }
 
         // Traiter les lectures seulement si la section n'est pas supprimée
         for (const lec of sec.lectures) {
-          console.log("lec updated", lec);
           if (lec.deleted) {
-            await deleteLecture(courseId, sectionId, lec._id);
+            await deleteLecture(courseId, sectionId, lec._id, token);
             continue;
           }
 
           if (lec.isNew) {
-            await uploadLecture(courseId, sectionId, {
-              // Utiliser le nouveau sectionId
+            await uploadLecture(token, courseId, sectionId, {
               ...lec,
-              file: lec.file, // Inclure le fichier si nécessaire
+              file: lec.file,
             });
           }
 
           if (lec.updated) {
-            await updateLecture(courseId, sectionId, lec._id, lec);
+            await updateLecture(token, courseId, sectionId, lec._id, lec);
           }
         }
       }
       for (const res of courseData.resources) {
-        console.log(res);
+        if (res.isNew) {
+          const resourceData = await addResource(courseId, res, token);
+        }
         if (res.updated) {
-          await updateResource(res._id, token, res);
+          await updateResource(res._id, res, token);
         }
       }
       if (courseData.faq) {
@@ -313,7 +286,7 @@ export default function CourseCreation() {
   };
 
   return (
-    <div className="mx-auto max-w-3xl p-6 bg-white shadow-lg rounded-lg">
+    <div className="mx-5 w-full  p-12 bg-white shadow-lg rounded-lg">
       <h1 className="mb-8 text-3xl font-bold">Create a New Course</h1>
       <div className="mb-8 flex flex-wrap justify-center md:justify-between space-x-2">
         {steps.map((step, index) => (

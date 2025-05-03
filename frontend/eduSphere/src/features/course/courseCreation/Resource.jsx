@@ -16,7 +16,7 @@ export default function Resource({ resource, setCourseData, resourceIndex }) {
         return {
           ...res,
           [field]: value,
-          ...(prev.isEdit ? { updated: true } : {}),
+          ...(prev.isEdit && !res.isNew && { updated: true }),
         };
       }),
     }));
@@ -25,10 +25,15 @@ export default function Resource({ resource, setCourseData, resourceIndex }) {
   const handleDeleteResource = () => {
     setCourseData((prev) => ({
       ...prev,
-      resources: prev.resources.filter((res, i) => {
-        if (i !== resourceIndex) return true;
-        return prev.isEdit && !res.isNew ? { ...res, deleted: true } : false;
-      }),
+      resources: prev.resources
+        .map((res, i) =>
+          i === resourceIndex
+            ? prev.isEdit && !res.isNew
+              ? { ...res, deleted: true }
+              : null
+            : res
+        )
+        .filter(Boolean),
     }));
   };
 
@@ -67,7 +72,7 @@ export default function Resource({ resource, setCourseData, resourceIndex }) {
         onFileSelect={handleFileSelect}
       />
 
-      {isPDF && (
+      {/* {isPDF && (
         <>
           <div className="flex items-center space-x-2 mb-2">
             <input
@@ -111,7 +116,7 @@ export default function Resource({ resource, setCourseData, resourceIndex }) {
             />
           </div>
         </>
-      )}
+      )} */}
     </div>
   );
 }

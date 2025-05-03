@@ -8,11 +8,10 @@ import React, {
 
 const TabsContext = createContext();
 
-export const Tabs = ({ defaultValue, onTabChange, children, className }) => {
+export const Tabs = ({ defaultValue, children, className }) => {
   const [activeTab, setActiveTab] = useState(defaultValue);
   const handleTabChange = (value) => {
     setActiveTab(value);
-    onTabChange(value);
   };
 
   return (
@@ -26,9 +25,7 @@ export const TabsList = ({ children, className }) => {
   const { setActiveTab } = useContext(TabsContext);
 
   return (
-    <div
-      className={`grid w-full grid-cols-1 md:grid-cols-3 gap-2 ${className}`}
-    >
+    <div className={`grid w-full grid-cols-1  gap-2 ${className}`}>
       {React.Children.map(children, (child) =>
         cloneElement(child, {
           onClick: () => setActiveTab(child.props.value),

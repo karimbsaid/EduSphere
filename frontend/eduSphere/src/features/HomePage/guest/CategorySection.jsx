@@ -1,6 +1,6 @@
 /* eslint-disable react/prop-types */
 import { HiArrowRight } from "react-icons/hi2";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import Card from "../../../ui/Card";
 import Badge from "../../../ui/Badge";
@@ -20,6 +20,12 @@ const categoryColors = {
 };
 
 const CategorySection = ({ coursesByCategory = [] }) => {
+  const navigate = useNavigate();
+
+  const handleExploreCourses = (category) => {
+    const courseQueryUrl = `/courses?page=1&category=${category}`;
+    navigate(courseQueryUrl);
+  };
   return (
     <section className="py-20">
       <div className="container mx-auto px-4">
@@ -52,6 +58,7 @@ const CategorySection = ({ coursesByCategory = [] }) => {
                   categoryColors[category._id] ||
                   "bg-gradient-to-r from-gray-500 to-gray-400"
                 } p-6`}
+                onClick={() => handleExploreCourses(category._id)}
               >
                 <div className="flex justify-between items-center mb-4">
                   <span className="text-4xl">

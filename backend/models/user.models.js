@@ -4,7 +4,7 @@ const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
 const Course = require("./course.models");
 const UserDetails = require("./userDetails.model");
-
+require("./feature.model");
 const userSchema = new mongoose.Schema(
   {
     name: {
@@ -26,31 +26,11 @@ const userSchema = new mongoose.Schema(
       select: false,
     },
     role: {
-      type: String,
-      enum: ["student", "instructor", "admin"],
-      default: "student",
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Role",
+      required: true,
     },
-    permissions: {
-      type: [String],
-      default: function () {
-        switch (this.role) {
-          case "admin":
-            return [
-              "createCourse",
-              "editCourse",
-              "deleteCourse",
-              "addUser",
-              "editUser",
-              "deleteUser",
-            ];
-          case "instructor":
-            return ["createCourse", "editCourse", "deleteCourse"];
-          case "student":
-          default:
-            return ["enrollCourse"];
-        }
-      },
-    },
+
     additionalDetails: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "UserDetails",
@@ -58,8 +38,13 @@ const userSchema = new mongoose.Schema(
     createdAt: {
       type: Date,
       default: Date.now,
-      select: false,
     },
+    status: {
+      type: String,
+      enum: ["active", "blocked", "suspended", "pending"],
+      default: "active",
+    },
+
     passwordResetToken: { type: String, select: false },
     passwordResetExpires: { type: Date, select: false },
   },
@@ -107,21 +92,29 @@ userSchema.virtual("courses", {
 });
 
 userSchema.pre(/^find/, function (next) {
-  this.populate("additionalDetails");
-
+  this.populate({
+    path: "additionalDetails",
+  }).populate({
+    path: "role",
+    select: "name",
+    populate: {
+      path: "permissions",
+      select: "feature authorized",
+      populate: {
+        path: "feature",
+        select: "name",
+      },
+    },
+  });
   next();
 });
-
 userSchema.pre("deleteOne", async function (next) {
-  console.log("pre delete");
   const user = await this.model.findOne(this.getQuery());
-  console.log("user", user);
   if (!user) return next();
 
   const courses = await Course.find({ instructor: user._id });
   console.log(courses);
   for (const course of courses) {
-    console.log("okk");
     await Course.deleteCourse(course._id);
   }
   if (user.additionalDetails) {

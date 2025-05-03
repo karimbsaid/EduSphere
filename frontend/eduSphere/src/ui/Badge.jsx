@@ -10,13 +10,14 @@ export default function Badge({
   ...props
 }) {
   const varianatStyles = {
-    success: "bg-green-200 text-green-600",
-    warning: "bg-yellow-200 text-yellow-600",
-    secondary: "bg-blue-200 text-blue-600",
+    success: "bg-white/80 text-green-600",
+    warning: "bg-white/80 text-yellow-600",
+    secondary: "bg-white/80 text-blue-600",
+    primary: "bg-green-100 text-green-700",
   };
   return (
     <span
-      className={`flex items-center justify-center gap-2 rounded-xl px-2 py-1 font-semibold ${style} ${varianatStyles[variant]}`}
+      className={`flex items-center w-auto justify-center  rounded-xl px-1 py-1 font-semibold ${style} ${varianatStyles[variant]}`}
       {...props}
     >
       {text}

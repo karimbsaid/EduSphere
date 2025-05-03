@@ -3,57 +3,69 @@ import React from "react";
 import Card from "../../../ui/Card";
 import Button from "../../../ui/Button";
 import ProgressBar from "../../../components/ProgressBar";
-import { FaFile } from "react-icons/fa";
 import { MdFileDownload, MdQuiz, MdVideocam } from "react-icons/md";
 
-export default function CourseIncludes({ handleWatchCourse, courseDetail }) {
+export default function CourseIncludes({
+  onActionClick,
+  courseDetail,
+  isInstructor,
+}) {
   const { quizCount, videoCount } = courseDetail.sections?.reduce(
     (counts, section) => {
       section.lectures?.forEach((lecture) => {
         if (lecture.type === "quiz") counts.quizCount += 1;
-        else if (lecture.type === "video") counts.videoCount += 1;
+        if (lecture.type === "video") counts.videoCount += 1;
       });
       return counts;
     },
     { quizCount: 0, videoCount: 0 }
   ) || { quizCount: 0, videoCount: 0 };
 
-  const totalResource = courseDetail.resources?.length;
-  const { progress } = courseDetail;
-  const isEnrolled = progress ? true : false;
+  const totalResource = courseDetail.resources?.length || 0;
+  const isEnrolled = !!courseDetail.progress;
+
+  const getActionLabel = () => {
+    if (isInstructor) return "Preview";
+    return isEnrolled ? "Continue" : "Enroll Now";
+  };
 
   return (
     <Card className="p-6 space-y-4 text-center">
-      <h2 className="text-2xl font-bold">{courseDetail.price} TND</h2>
-      <Button
-        label={isEnrolled ? "continue" : "Enroll Now"}
-        className="w-full bg-black text-white"
-        onClick={handleWatchCourse}
-      />
-      <p className="text-gray-500 text-sm">30-Day Money-Back Guarantee</p>
-      <div className="text-left space-y-2">
-        <h3 className="font-semibold">This course includes:</h3>
+      <h2 className="text-2xl font-bold">
+        {courseDetail.price > 0 ? `${courseDetail.price} TND` : "Gratuit"}
+      </h2>
+      <div className="flex justify-center">
+        <Button
+          label={getActionLabel()}
+          className="w-full bg-black text-white"
+          onClick={onActionClick}
+        />
+      </div>
+      <p className="text-gray-500 text-base">Accès illimité à vie</p>
 
+      <div className="text-left space-y-2">
+        <h3 className="font-semibold">Ce cours comprend :</h3>
         <p className="flex items-center gap-2">
           <MdQuiz /> {quizCount} Quiz
         </p>
         <p className="flex items-center gap-2">
-          <MdVideocam /> {videoCount} video
+          <MdVideocam /> {videoCount} Vidéos
         </p>
         <p className="flex items-center gap-2">
-          <MdFileDownload /> {totalResource} resources
+          <MdFileDownload /> {totalResource} Ressources
         </p>
       </div>
-      {isEnrolled && (
+
+      {isEnrolled && courseDetail.progress && (
         <div className="text-left">
-          <h3 className="font-semibold">Course progress:</h3>
+          <h3 className="font-semibold">Progression du cours :</h3>
           <ProgressBar
-            myAvance={progress.progressPercentage}
+            myAvance={courseDetail.progress.progressPercentage}
             total={100}
             className="h-2"
           />
           <p className="text-gray-500 text-sm">
-            {progress.progressPercentage}% complete
+            {courseDetail.progress.progressPercentage}% terminé
           </p>
         </div>
       )}

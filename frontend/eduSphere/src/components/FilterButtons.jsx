@@ -19,7 +19,9 @@ export default function FilterButtons({ options, filterField }) {
           key={option.value}
           onClick={() => handleSetFilter(option.value)}
           className={`cursor-pointer ${
-            option.value === currentFilter ? " bg-black text-white" : ""
+            option.value === currentFilter
+              ? " bg-black text-white p-2 b rounded-xl"
+              : "p-2"
           }`}
           text={option.label}
         />

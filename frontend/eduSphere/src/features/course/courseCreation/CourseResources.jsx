@@ -32,6 +32,7 @@ export default function CourseResources({ courseData, setCourseData }) {
   };
 
   const handleAddResource = () => {
+    console.log("add resource");
     setCourseData((prev) => ({
       ...prev,
       resources: [
@@ -97,7 +98,7 @@ export default function CourseResources({ courseData, setCourseData }) {
         {isLoading ? "Analyse en cours..." : "Prévisualiser les sections"}
       </button>
       <div>
-        <Modal>
+        {/*<Modal>
           <Modal.Trigger
             className={`px-4 py-2 bg-blue-500 text-white rounded ${
               isLoading && "hidden"
@@ -152,7 +153,7 @@ export default function CourseResources({ courseData, setCourseData }) {
               </Modal.CloseButton>
             </Modal.Footer>
           </Modal.Content>
-        </Modal>
+        </Modal>*/}
       </div>
     </div>
   );

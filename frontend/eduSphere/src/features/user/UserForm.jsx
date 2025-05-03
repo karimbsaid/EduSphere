@@ -13,15 +13,15 @@ const roles = [
   { value: "student", label: "Student" },
 ];
 
-const permissionsList = [
-  "createCourse",
-  "editCourse",
-  "deleteCourse",
-  "addUser",
-  "editUser",
-  "deleteUser",
-  "enrollCourse",
-];
+// const permissionsList = [
+//   "createCourse",
+//   "editCourse",
+//   "deleteCourse",
+//   "addUser",
+//   "editUser",
+//   "deleteUser",
+//   "enrollCourse",
+// ];
 
 export default function UserForm({ user = {}, onClose }) {
   const { user: authentifiedUser } = useAuth();
@@ -31,29 +31,35 @@ export default function UserForm({ user = {}, onClose }) {
 
   const { register, handleSubmit, setValue, watch, formState } = useForm({
     defaultValues: isEdit
-      ? user
+      ? {
+          ...user,
+          status: user.status ?? "active",
+          blockReason: user.blockReason ?? "",
+        }
       : {
           role: "admin",
           name: "",
           email: "",
           password: "changeme",
           permissions: [],
+          status: "active",
+          blockReason: "",
         },
   });
 
   const { errors } = formState;
-  const selectedPermissions = watch("permissions");
-  const handlePermissionChange = (permission) => {
-    const current = selectedPermissions || [];
-    if (current.includes(permission)) {
-      setValue(
-        "permissions",
-        current.filter((p) => p !== permission)
-      );
-    } else {
-      setValue("permissions", [...current, permission]);
-    }
-  };
+  // const selectedPermissions = watch("permissions");
+  // const handlePermissionChange = (permission) => {
+  //   const current = selectedPermissions || [];
+  //   if (current.includes(permission)) {
+  //     setValue(
+  //       "permissions",
+  //       current.filter((p) => p !== permission)
+  //     );
+  //   } else {
+  //     setValue("permissions", [...current, permission]);
+  //   }
+  // };
 
   const onFormSubmit = async (data) => {
     if (isEdit) {
@@ -132,8 +138,43 @@ export default function UserForm({ user = {}, onClose }) {
           </DropDown.Content>
         </DropDown>
       </div>
+      {isEdit && (
+        <div className="mt-4">
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              className="form-checkbox text-red-600"
+              {...register("status")}
+              onChange={(e) =>
+                setValue("status", e.target.checked ? "blocked" : "active")
+              }
+              checked={watch("status") === "blocked"}
+            />
+            <span className="text-red-600 font-medium">
+              Bloquer cet utilisateur
+            </span>
+          </label>
 
-      <div>
+          {watch("status") === "blocked" && (
+            <div className="mt-2">
+              <Input
+                label="Raison du blocage"
+                placeholder="Indiquer la raison du blocage"
+                {...register("blockReason", {
+                  required: watch("status") === "blocked",
+                })}
+              />
+              {errors.blockReason && (
+                <p className="text-red-600 text-sm">
+                  Ce champ est requis si l'utilisateur est bloqué
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* <div>
         <label className="block text-gray-700 font-medium mb-1">
           Permissions
         </label>
@@ -151,7 +192,7 @@ export default function UserForm({ user = {}, onClose }) {
             </label>
           ))}
         </div>
-      </div>
+      </div> */}
 
       <div className="flex justify-between mt-5">
         <Button

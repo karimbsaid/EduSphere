@@ -2,13 +2,22 @@ const mongoose = require("mongoose");
 const Lecture = require("./lecture.models");
 
 const sectionSchema = new mongoose.Schema({
-  title: { type: String, required: true },
+  title: {
+    type: String,
+    required: [true, "Le titre de la section est requis"],
+    trim: true,
+  },
   lectures: [
     {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Lecture",
     },
   ],
+  draftVersion: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Section",
+    default: null, // Référence à la version copiée (si elle existe)
+  },
 });
 
 // sectionSchema.pre(

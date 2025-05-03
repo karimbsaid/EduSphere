@@ -1,6 +1,6 @@
 /* eslint-disable react/prop-types */
 import { FiMail, FiPhone } from "react-icons/fi";
-import Modal from "../../ui/ModalOff";
+import { Modal } from "../../ui/ModalOff";
 import Button from "../../ui/Button";
 import ProfileForm from "./ProfileForm";
 const ProfileInfo = ({ profile, handleSubmit }) => {

@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 import { LuFile, LuFileText } from "react-icons/lu";
 
 export default function CourseResource({ resources = [] }) {
-  console.log("resources", resources);
+  // console.log("resources", resources);
   const handleLinkClick = (url) => {
     window.open(url, "_blank"); // Ouvre le lien dans un nouvel onglet
   };

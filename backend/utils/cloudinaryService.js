@@ -4,6 +4,9 @@ const cloudinary = require("../config/cloudinary");
 const uploadToCloudinary = async (file, folder) => {
   return await cloudinary.uploader.upload(file.tempFilePath, {
     resource_type: "auto",
+    use_filename: true,
+    unique_filename: false,
+    filename_override: file.name,
     folder,
   });
 };

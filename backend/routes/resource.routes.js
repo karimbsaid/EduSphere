@@ -1,9 +1,9 @@
 const express = require("express");
 const router = express.Router({ mergeParams: true });
 const resourceController = require("../controllers/resource.controller");
-
-router.post("/", resourceController.addResource);
-router.patch("/:resourceId", resourceController.updateResource);
+const auth = require("../middleware/auth");
+router.post("/", auth.protect, resourceController.addResource);
+router.patch("/:resourceId", auth.protect, resourceController.updateResource);
 router.get("/", resourceController.getResources);
 router.delete("/:resourceId", resourceController.deleteResource);
 

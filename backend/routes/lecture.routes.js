@@ -1,12 +1,13 @@
-const courseController = require("../controllers/course.controller");
+const lectureController = require("../controllers/lecture.controller");
 const express = require("express");
+const auth = require("../middleware/auth");
 const router = express.Router({ mergeParams: true });
 
-router.post("/", courseController.createLecture);
+router.post("/", auth.protect, lectureController.createLecture);
 
-router.patch("/:lectureId", courseController.updateLecture);
+router.patch("/:lectureId", auth.protect, lectureController.updateLecture);
 
-router.delete("/:lectureId", courseController.deleteLecture);
+router.delete("/:lectureId", auth.protect, lectureController.deleteLecture);
 
-router.get("/:lectureId", courseController.getLecture);
+router.get("/:lectureId", lectureController.getLecture);
 module.exports = router;

@@ -1,4 +1,5 @@
 const User = require("../models/user.models");
+const Role = require("../models/Role.model");
 const jwt = require("jsonwebtoken");
 const catchAsync = require("./../utils/catchAsync");
 const AppError = require("../utils/appError");
@@ -17,13 +18,18 @@ exports.signin = catchAsync(async (req, res, next) => {
   if (userExiste) {
     next(new AppError("tu est deja un compte avec ce email"));
   }
-
+  const roleDoc = await Role.findOne({
+    name: { $regex: new RegExp(`^${role}$`, "i") },
+  });
+  if (!roleDoc) {
+    return next(new AppError(`Le rôle "${role}" n'existe pas`, 400));
+  }
   const defaultProfile = await UserDetails.create({});
   const user = await User.create({
     name,
     email,
     password,
-    role,
+    role: roleDoc._id,
     additionalDetails: defaultProfile._id,
   });
   const userObj = user.toObject();

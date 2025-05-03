@@ -32,7 +32,6 @@ export default function Section({ section, sectionIndex, setCourseData }) {
                   title: "",
                   ...(type === "video" && { file: null, duration: "" }),
                   ...(type === "quiz" && { questions: [] }),
-                  ...(type === "text" && { content: "" }),
                   ...(prev.isEdit && { isNew: true }), // Ajout de isNew uniquement si prev.isEdit est true
                 },
               ],
@@ -48,11 +47,11 @@ export default function Section({ section, sectionIndex, setCourseData }) {
         .map((section, i) =>
           i === sectionIndex
             ? prev.isEdit && !section.isNew
-              ? { ...section, deleted: true } // Marquer la section comme supprimée si en mode édition et qu'elle n'est pas nouvelle
-              : null // Supprimer la section immédiatement si elle est nouvelle et en mode édition
+              ? { ...section, deleted: true }
+              : null
             : section
         )
-        .filter(Boolean), // Filtrer les sections nulles (supprimées)
+        .filter(Boolean),
     }));
   };
 
@@ -94,12 +93,6 @@ export default function Section({ section, sectionIndex, setCourseData }) {
           onClick={() => handleAddContent("quiz")}
         >
           ❓ Ajouter un quiz
-        </button>
-        <button
-          className="p-2 border rounded hover:bg-gray-50"
-          onClick={() => handleAddContent("text")}
-        >
-          📝 Ajouter du texte
         </button>
       </div>
     </div>

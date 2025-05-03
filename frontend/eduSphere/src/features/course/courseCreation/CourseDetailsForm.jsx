@@ -7,7 +7,6 @@ export default function CourseDetailsForm({
   courseData,
   handleCourseDataChange,
 }) {
-  console.log("courseData", courseData);
   const [coverPreview, setCoverPreview] = useState(null);
   useEffect(() => {
     if (courseData.coverImage && !coverPreview) {

@@ -14,7 +14,7 @@ const AddReview = () => {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const { courseId } = useParams();
   const { user } = useAuth();
-  const token = user.token;
+  const token = user?.token;
 
   const handleSubmit = async (e) => {
     e.preventDefault();

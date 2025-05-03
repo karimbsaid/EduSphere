@@ -58,7 +58,6 @@ exports.getAllUsers = catchAsync(async (req, res, next) => {
 
 exports.addUser = catchAsync(async (req, res, next) => {
   const { name, email, password, role, permissions } = req.body;
-  console.log(name, email, password, role, permissions);
   const userExiste = await User.findOne({ email });
   if (userExiste) {
     next(new AppError("tu est deja un compte avec ce email"));
@@ -102,12 +101,63 @@ exports.editUser = catchAsync(async (req, res, next) => {
 });
 
 exports.deleteUser = catchAsync(async (req, res, next) => {
-  console.log("deleted");
   const { userId } = req.params;
-  console.log(userId);
   const user = User.findById(userId);
   if (!user) return next(new AppError("user pas trouvée", 404));
   await user.deleteOne();
-  console.log("succes deleted");
   res.status(204).json({ status: "success", message: "user deleted" });
+});
+
+exports.getListOfMyStudents = catchAsync(async (req, res, next) => {
+  const userId = req.user._id;
+  console.log(req.query);
+
+  // 1. Récupérer les cours créés par l'instructeur
+  const instructorCourses = await Course.find({ instructor: userId })
+    .select("_id")
+    .lean();
+  const courseIds = instructorCourses.map((course) => course._id);
+  const filter = { courseId: { $in: courseIds } };
+
+  // 2. Appliquer les filtres (hors recherche)
+  const features = new APIFeatures(Enrollment.find(filter), req.query)
+    .filter()
+    .sort()
+    .paginate()
+    .limitFields();
+
+  // 3. Récupérer les étudiants (avec les populate)
+  let students = await features.query
+    .populate({ path: "studentId", select: "name email" })
+    .populate({ path: "courseId", select: "title" })
+    .populate({ path: "progress", select: "progressPercentage" });
+
+  // 4. Filtrer les résultats en mémoire si une recherche est demandée
+  if (req.query.search) {
+    const search = req.query.search.toLowerCase();
+    students = students.filter(
+      (item) =>
+        item.studentId &&
+        (item.studentId.name.toLowerCase().includes(search) ||
+          item.studentId.email.toLowerCase().includes(search))
+    );
+  }
+
+  // 5. Trier en mémoire si besoin
+  if (req.query.sort === "-student") {
+    students.sort((a, b) => b.studentId.name.localeCompare(a.studentId.name));
+  } else if (req.query.sort === "-cour") {
+    students.sort((a, b) => b.courseId.title.localeCompare(a.courseId.title));
+  }
+
+  // 6. Total des documents avant pagination
+  const totalDocuments = await Enrollment.countDocuments(filter);
+
+  // 7. Réponse finale
+  res.status(200).json({
+    status: "success",
+    nombreDocuments: students.length,
+    totalDocuments,
+    students,
+  });
 });

@@ -9,10 +9,15 @@ import {
 } from "react-icons/hi2";
 import ProgressBar from "../../../components/ProgressBar";
 import Button from "../../../ui/Button";
-import NavigationButton from "../../quiz/NavigationButton";
-import Quiz from "../../quiz/Quiz";
-import QuizResult from "../../quiz/QuizResult";
-export default function QuizLecture({ questions, onComplete, duration }) {
+import NavigationButton from "./quiz/NavigationButton";
+import Quiz from "./quiz/Quiz";
+import QuizResult from "./quiz/QuizResult";
+export default function QuizLecture({
+  questions,
+  onComplete,
+  duration,
+  isPreview = false,
+}) {
   const [timeLeft, setTimeLeft] = useState(duration || 900);
 
   useEffect(() => {
@@ -63,6 +68,7 @@ export default function QuizLecture({ questions, onComplete, duration }) {
   const [score, setScore] = useState(0);
   const [results, setResults] = useState([]);
   const handleNext = () => {
+    if (isPreview && currentQuestion === questions.length - 1) return;
     if (currentQuestion === questions.length - 1) {
       let totalScore = 0;
       const resultsData = [];
@@ -112,7 +118,7 @@ export default function QuizLecture({ questions, onComplete, duration }) {
           </div>
           <div className="flex space-x-2 items-center">
             <HiOutlineQuestionMarkCircle />
-            <span>Questions : 8</span>
+            {/* <span>Questions : 8</span> */}
           </div>
           <div className="flex space-x-2 items-center">
             <HiOutlineTrophy />
@@ -130,7 +136,10 @@ export default function QuizLecture({ questions, onComplete, duration }) {
             </div>
             <div className="flex  space-x-1 items-center">
               <HiOutlineClock />
-              <h1 className="font-normal">{formatTime(timeLeft)} restants</h1>
+              <h1 className="font-normal">
+                {isPreview ? formatTime(duration) : formatTime(timeLeft)}{" "}
+                restants
+              </h1>
             </div>
           </div>
           <ProgressBar myAvance={currentQuestion + 1} total={totalQuestion} />

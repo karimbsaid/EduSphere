@@ -46,16 +46,29 @@ exports.pay = catchAsync(async (req, res, next) => {
   };
 
   const response = await axios.post(url, payload);
-
   const paymentData = response.data;
-  const payment = await Payment.create({
+
+  let payment = await Payment.findOne({
     studentId: userId,
     courseId,
-    amount: course.price * 1000,
-    status: "pending",
-    paymentId: paymentData.result.payment_id,
+    paymentStatus: "pending",
   });
-  console.log(paymentData.result.payment_id);
+  console.log("payment", payment);
+
+  if (payment) {
+    payment.paymentId = paymentData.result.payment_id;
+    payment.amount = course.price * 1000;
+    await payment.save();
+  } else {
+    // Créer un nouveau paiement
+    payment = await Payment.create({
+      studentId: userId,
+      courseId,
+      amount: course.price * 1000,
+      status: "pending",
+      paymentId: paymentData.result.payment_id,
+    });
+  }
 
   res.status(200).json({
     status: "success",
@@ -65,7 +78,6 @@ exports.pay = catchAsync(async (req, res, next) => {
 
 exports.verify = catchAsync(async (req, res, next) => {
   const { payment_id } = req.query;
-  console.log("verify", payment_id);
   const url = `https://developers.flouci.com/api/verify_payment/${payment_id}`;
   const response = await axios.get(url, {
     headers: {
@@ -74,7 +86,6 @@ exports.verify = catchAsync(async (req, res, next) => {
       appsecret: process.env.APP_SECRET,
     },
   });
-  console.log(response.data);
 
   const verification = response.data;
   const payment = await Payment.findOne({ paymentId: payment_id });
@@ -88,7 +99,11 @@ exports.verify = catchAsync(async (req, res, next) => {
       path: "sections",
       populate: { path: "lectures" },
     })
-    .select("sections")
+    .populate({
+      path: "instructor",
+      select: "name",
+    })
+    .select("sections title instructor price")
     .lean();
 
   if (!course) {
@@ -112,7 +127,7 @@ exports.verify = catchAsync(async (req, res, next) => {
     return res.send(
       await renderTemplate("payment-success", {
         title: course.title,
-        instructor: course.instructor,
+        instructor: course.instructor.name,
         amount: course.price,
         message: "Votre accès au cours a été activé avec succès",
         courseLink: `/course/${course._id}/start`,
@@ -135,7 +150,7 @@ exports.getAllPaiements = async (req, res) => {
 
     let filter = {};
 
-    if (user.role === "instructor") {
+    if (user.role.name === "Instructor") {
       const instructorCourses = await Course.find({
         instructor: user._id,
       })
@@ -144,7 +159,6 @@ exports.getAllPaiements = async (req, res) => {
       const courseIds = instructorCourses.map((course) => course._id);
       filter.courseId = { $in: courseIds };
     }
-    console.log(req.query);
 
     const totalDocuments = await Payment.countDocuments(filter);
     const features = new APIFeatures(Payment.find(filter), req.query)

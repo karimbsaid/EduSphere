@@ -7,73 +7,112 @@ const catchAsync = require("../utils/catchAsync");
 const cloudinary = require("../config/cloudinary");
 const slugify = require("slugify");
 const APIFeatures = require("../utils/apiFeatures");
-const Interaction = require("../models/interaction.model");
 const User = require("../models/user.models");
 const { createInteraction } = require("../utils/interactionService");
-const EmailService = require("../utils/emailService");
+const Resource = require("../models/resource.models");
+const mongoose = require("mongoose");
+const Role = require("../models/Role.model");
+const {
+  uploadToCloudinary,
+  deleteResourceFromCloudinary,
+} = require("../utils/cloudinaryService");
 // Fonction pour télécharger un fichier sur Cloudinary
-const uploadToCloudinary = async (file, folder) => {
-  return await cloudinary.uploader.upload(file.tempFilePath, {
-    resource_type: "auto",
-    use_filename: true,
-    unique_filename: false,
-    filename_override: file.name,
+// const uploadToCloudinary = async (file, folder) => {
+//   return await cloudinary.uploader.upload(file.tempFilePath, {
+//     resource_type: "auto",
+//     use_filename: true,
+//     unique_filename: false,
+//     filename_override: file.name,
+//     folder,
+//   });
+// };
 
-    folder,
-  });
-};
-const deleteResourceFromCloudinary = async (publicId, resource_type) => {
-  const result = await cloudinary.api.delete_resources([publicId], {
-    type: "upload",
-    resource_type: resource_type,
-  });
-  return result;
-};
+// const deleteResourceFromCloudinary = async (publicId, resource_type) => {
+//   const result = await cloudinary.api.delete_resources([publicId], {
+//     type: "upload",
+//     resource_type: resource_type,
+//   });
+//   return result;
+// };
 
 // Fonction pour déplacer une ressource sur Cloudinary
-const moveResourceOnCloudinary = async (publicId, newFolder) => {
-  const newPublicId = `${newFolder}/${publicId.split("/").pop()}`;
-  await cloudinary.uploader.rename(publicId, newPublicId, {
-    overwrite: true,
-    invalidate: true,
-  });
-  return newPublicId;
-};
+// const moveResourceOnCloudinary = async (publicId, newFolder) => {
+//   const newPublicId = `${newFolder}/${publicId.split("/").pop()}`;
+//   await cloudinary.uploader.rename(publicId, newPublicId, {
+//     overwrite: true,
+//     invalidate: true,
+//   });
+//   return newPublicId;
+// };
 
-// Fonction pour supprimer un dossier et son contenu sur Cloudinary
-const deleteFolderOnCloudinary = async (folderPath) => {
-  await cloudinary.api.delete_resources_by_prefix(folderPath);
-  await cloudinary.api.delete_folder(folderPath);
-};
+// // Fonction pour supprimer un dossier et son contenu sur Cloudinary
+// const deleteFolderOnCloudinary = async (folderPath) => {
+//   await cloudinary.api.delete_resources_by_prefix(folderPath);
+//   await cloudinary.api.delete_folder(folderPath);
+// };
 
-//get all course
-
+// get all courses
 exports.getTopPopularCourses = (req, res, next) => {
   req.query.limit = "5";
-  req.query.sort = "-totalStudent";
-  req.query.fields = "title,totalStudent,instructor";
+  req.query.sort = "-totalStudents"; // Ajusté pour totalStudents
+  req.query.fields = "title,totalStudents,instructor"; // Ajusté
   next();
 };
 
-exports.getAllCourses = async (req, res) => {
-  let userId, userRole;
+exports.getMyCourses = catchAsync(async (req, res) => {
+  let userId;
 
-  // Vérification si req.user existe
   if (req.user) {
     userId = req.user._id;
-    userRole = req.user.role;
-  }
-  let totalDocuments;
-
-  let courseFilter = {};
-  if (userRole === "instructor") {
-    courseFilter = { instructor: userId };
   }
 
-  totalDocuments = await Course.countDocuments(courseFilter);
+  let courseFilter = {
+    $or: [
+      { instructor: userId, parentCourseId: null }, // Cours originaux
+      { instructor: userId, parentCourseId: { $ne: null } }, // Copies brouillon
+    ],
+  };
+
+  const totalDocuments = await Course.countDocuments(courseFilter);
 
   const features = new APIFeatures(
     Course.find(courseFilter)
+      .populate({
+        path: "instructor",
+        select: "name additionalDetails",
+        populate: { path: "additionalDetails" },
+      })
+      .select("-sections -resources"),
+    req.query
+  )
+    .filter()
+    .search(["title", "description", "category", "tags"])
+    .sort()
+    .limitFields()
+    .paginate();
+
+  let courses = await features.query;
+
+  res.status(200).json({
+    status: "success",
+    results: courses.length,
+    totalDocuments,
+    courses,
+  });
+});
+
+exports.getAllCourses = catchAsync(async (req, res) => {
+  let userId;
+  if (req.user) {
+    userId = req.user._id;
+  }
+
+  let totalDocuments;
+
+  totalDocuments = await Course.countDocuments({});
+
+  const features = new APIFeatures(
+    Course.find()
       .populate({
         path: "instructor",
         select: "name additionalDetails",
@@ -94,9 +133,8 @@ exports.getAllCourses = async (req, res) => {
     const sortOrder = req.query.sort.startsWith("-") ? -1 : 1;
     courses = courses.sort((a, b) => (a.revenu - b.revenu) * sortOrder);
   }
-  console.log(req.user);
-  if (req.query.search && req.user?._id) {
-    await createInteraction(req.user._id, "search", req.query.search);
+  if (req.query.search && userId) {
+    await createInteraction(userId, "search", req.query.search);
   }
 
   res.status(200).json({
@@ -105,10 +143,9 @@ exports.getAllCourses = async (req, res) => {
     totalDocuments,
     courses,
   });
-};
+});
 
-//get course detail
-
+// get course detail
 exports.getCourseDetails = catchAsync(async (req, res) => {
   const { courseId } = req.params;
   const isEditRoute = req.originalUrl.includes("/edit");
@@ -116,20 +153,19 @@ exports.getCourseDetails = catchAsync(async (req, res) => {
   const course = await Course.findById(courseId)
     .populate({
       path: "sections",
-
       populate: {
         path: "lectures",
         select: isEditRoute ? "" : "-url -questions",
       },
     })
-    .populate("instructor", "name ")
-    .populate({ path: "resources", select: isEditRoute ? "" : "-resourceUrl" })
-    .lean();
+    .populate({ path: "instructor" })
+    .populate({
+      path: "resources",
+      select: isEditRoute ? "" : "-resourceUrl",
+    });
 
   if (!course) {
-    return res
-      .status(404)
-      .json({ status: "fail", message: "Cours non trouvé" });
+    return next(new AppError("Cours non trouvé", 404));
   }
 
   if (req.user && req.user._id && course?.tags?.length > 0 && !isEditRoute) {
@@ -138,50 +174,159 @@ exports.getCourseDetails = catchAsync(async (req, res) => {
     );
   }
 
-  const numberOfStudent = await Enrollment.countDocuments({ courseId });
+  const numberOfStudents = await Enrollment.countDocuments({ courseId });
 
-  course.totalStudent = course.totalStudent || numberOfStudent;
+  course.totalStudents = course.totalStudents || numberOfStudents; // Ajusté
 
   res.status(200).json({ status: "success", course });
 });
 
-/*** Création d'un cours ***/
+// Création d'un cours
 exports.createCourse = catchAsync(async (req, res, next) => {
+  const { title, tags } = req.body;
+  const slug_title = slugify(title, { lower: true, strict: true });
+
+  if (tags && typeof tags === "string") {
+    try {
+      req.body.tags = JSON.parse(tags);
+    } catch (error) {
+      return next(new AppError("Format des tags invalide", 400));
+    }
+  }
+  const folder = `courses/${slug_title}`;
+  let imageUrl = "";
+  let assetFolder = "";
+
+  if (req.files && req.files.coverImage) {
+    const image = await uploadToCloudinary(req.files.coverImage, folder);
+    imageUrl = image.secure_url;
+    assetFolder = image.asset_folder;
+  }
+
+  const course = await Course.create({
+    ...req.body,
+    imageUrl,
+    assetFolder,
+    instructor: req.user._id,
+  });
+
+  res.status(201).json({ status: "success", data: course });
+});
+
+exports.createCourseUpdate = catchAsync(async (req, res, next) => {
+  const { courseId } = req.params;
+  const user = req.user;
+
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
-    const { title, tags } = req.body;
-    const slug_title = slugify(title, { lower: true, strict: true });
+    const originalCourse = await Course.findById(courseId)
+      .populate({
+        path: "sections",
+        populate: { path: "lectures" },
+      })
+      .populate("resources")
+      .session(session);
+    if (!originalCourse) {
+      return next(new AppError("Cours non trouvé", 404));
+    }
 
-    if (tags && typeof tags === "string") {
-      try {
-        req.body.tags = JSON.parse(tags);
-      } catch (error) {
-        return next(new AppError("Format des tags invalide", 400));
+    if (originalCourse.instructor.toString() !== user._id.toString()) {
+      return next(
+        new AppError("Vous n’êtes pas autorisé à modifier ce cours", 403)
+      );
+    }
+    if (originalCourse.status !== "published") {
+      return next(new AppError("Ce cours n’est pas publié", 400));
+    }
+    if (originalCourse.updatedVersionId) {
+      return next(new AppError("Une mise à jour est déjà en cours", 400));
+    }
+
+    // Créer de nouvelles leçons pour chaque section
+    const newSections = [];
+    for (const originalSection of originalCourse.sections) {
+      const newLectures = [];
+      for (const originalLecture of originalSection.lectures) {
+        const newLecture = await Lecture.create(
+          [
+            {
+              title: originalLecture.title,
+              type: originalLecture.type,
+              url: originalLecture.url,
+              duration: originalLecture.duration,
+              questions: originalLecture.questions,
+            },
+          ],
+          { session }
+        );
+        originalLecture.draftVersion = newLecture[0]._id;
+        await originalLecture.save({ session });
+        newLectures.push(newLecture[0]._id);
       }
+
+      const newSection = await Section.create(
+        [{ title: originalSection.title, lectures: newLectures }],
+        { session }
+      );
+      originalSection.draftVersion = newSection[0]._id;
+      await originalSection.save({ session });
+      newSections.push(newSection[0]._id);
     }
-    const folder = `courses/${slug_title}`;
-    let imageUrl = "";
-    let assetFolder = "";
 
-    if (req.files && req.files.coverImage) {
-      const image = await uploadToCloudinary(req.files.coverImage, folder);
-      imageUrl = image.secure_url;
-      assetFolder = image.asset_folder;
+    const newResources = [];
+    for (const originalResource of originalCourse.resources) {
+      const newResource = await Resource.create(
+        [
+          {
+            title: originalResource.title,
+            resourceUrl: originalResource.resourceUrl,
+          },
+        ],
+        { session }
+      );
+      newResources.push(newResource[0]._id);
     }
 
-    const course = await Course.create({
-      ...req.body,
-      imageUrl,
-      assetFolder,
-      instructor: req.user._id,
-    });
+    // Créer le cours brouillon
+    const draftCourseData = {
+      title: `${originalCourse.title} (brouillon)`,
+      description: originalCourse.description,
+      imageUrl: originalCourse.imageUrl,
+      status: "draft",
+      level: originalCourse.level,
+      price: originalCourse.price,
+      category: originalCourse.category,
+      tags: originalCourse.tags,
+      instructor: originalCourse.instructor,
+      totalStudents: 0,
+      totalStudentComplete: 0,
+      totalDuration: originalCourse.totalDuration,
+      sections: newSections,
+      resources: newResources,
+      assetFolder: originalCourse.assetFolder,
+      parentCourseId: originalCourse._id,
+      slug: `${originalCourse.slug}-draft-${Date.now()}`,
+    };
 
-    res.status(201).json({ status: "success", data: course });
-  } catch (err) {
-    console.log(err);
+    const draftCourse = await Course.create([draftCourseData], { session });
+    originalCourse.updatedVersionId = draftCourse[0]._id;
+    await originalCourse.save({ session });
+
+    await session.commitTransaction();
+    res.status(201).json({ status: "success", data: draftCourse[0] });
+  } catch (error) {
+    await session.abortTransaction();
+    return next(error);
+  } finally {
+    session.endSession();
   }
 });
 
-/*** Mise à jour d'un cours ***/
+// Nouvelle fonction : Soumettre un cours pour approbation
+
+// Mise à jour d'un cours
 exports.updateCourse = catchAsync(async (req, res, next) => {
   const { courseId } = req.params;
   const { title, tags, category = "Programming" } = req.body;
@@ -190,6 +335,20 @@ exports.updateCourse = catchAsync(async (req, res, next) => {
   if (!course) {
     return next(new AppError("Course not found", 404));
   }
+  if (course.instructor.toString() !== req.user._id.toString()) {
+    return next(
+      new AppError("Vous n’êtes pas autorisé à modifier ce cours", 403)
+    );
+  }
+  if (course.status === "pending") {
+    return next(
+      new AppError(
+        "Ce cours est en attente d’approbation et ne peut pas être modifié",
+        400
+      )
+    );
+  }
+
   if (tags && typeof tags === "string") {
     try {
       req.body.tags = JSON.parse(tags);
@@ -223,7 +382,7 @@ exports.updateCourse = catchAsync(async (req, res, next) => {
   res.status(200).json({ status: "success", data: updatedCourse });
 });
 
-/*** Suppression d'un cours ***/
+// Suppression d'un cours
 exports.deleteCourse = catchAsync(async (req, res, next) => {
   const { courseId } = req.params;
   const course = await Course.findById(courseId);
@@ -231,204 +390,43 @@ exports.deleteCourse = catchAsync(async (req, res, next) => {
   if (!course) {
     return next(new AppError("Course not found", 404));
   }
+  if (course.instructor.toString() !== req.user._id.toString()) {
+    return next(
+      new AppError("Vous n’êtes pas autorisé à supprimer ce cours", 403)
+    );
+  }
+  if (course.status === "pending") {
+    return next(
+      new AppError(
+        "Ce cours est en attente d’approbation et ne peut pas être supprimé",
+        400
+      )
+    );
+  }
 
-  const folder = `courses/${course.title}`;
+  const enrollmentCount = await Enrollment.countDocuments({ courseId });
 
-  await deleteFolderOnCloudinary(folder);
+  if (enrollmentCount > 0) {
+    return next(
+      new AppError("Cannot delete course: students are still enrolled.", 400)
+    );
+  }
 
-  await course.deleteOne();
+  // Si c’est une copie brouillon, mettre à jour le cours original
+  if (course.parentCourseId) {
+    const originalCourse = await Course.findById(course.parentCourseId);
+    if (originalCourse) {
+      originalCourse.updatedVersionId = null;
+      await originalCourse.save();
+    }
+  }
+
+  const folder = `courses/${course.slug}`;
+  // await deleteFolderOnCloudinary(folder);
+
+  await Course.deleteCourse(courseId);
 
   res.status(204).json({ status: "success", message: "Course deleted" });
-});
-
-/*** Création d'une section ***/
-exports.createSection = catchAsync(async (req, res, next) => {
-  const { courseId } = req.params;
-  const { title } = req.body;
-
-  const course = await Course.findById(courseId).populate("sections");
-
-  if (!course) {
-    return next(new AppError("Course not found", 404));
-  }
-
-  const section = await Section.create({ title });
-
-  course.sections.push(section._id);
-  await course.save();
-
-  res.status(201).json({ status: "success", data: section });
-});
-
-/*** Mise à jour d'une section ***/
-exports.updateSection = catchAsync(async (req, res, next) => {
-  const { sectionId, courseId } = req.params;
-  const { title } = req.body;
-  const section = await Section.findById(sectionId);
-  const course = await Course.findById(courseId);
-  if (!section || !course) {
-    return next(new AppError("Section or Course not found", 404));
-  }
-  section.title = title;
-  await section.save();
-
-  res.status(200).json({ status: "success", data: section });
-});
-
-/*** Suppression d'une section ***/
-exports.deleteSection = catchAsync(async (req, res, next) => {
-  const { sectionId, courseId } = req.params;
-
-  const section = await Section.findById(sectionId);
-  const course = await Course.findById(courseId).populate("sections");
-
-  if (!section || !course) {
-    return next(new AppError("Section or Course not found", 404));
-  }
-  await Section.deleteSectionWithLecture(sectionId);
-
-  course.sections.pull(sectionId);
-
-  await course.save();
-
-  res.status(204).json({ status: "success", message: "Section deleted" });
-});
-
-/*** Création d'une leçon ***/
-exports.createLecture = catchAsync(async (req, res, next) => {
-  const { courseId, sectionId } = req.params;
-  if (req.body.questions) {
-    try {
-      req.body.questions = JSON.parse(req.body.questions);
-    } catch (error) {
-      return res.status(400).json({
-        status: "fail",
-        message: "Format des questions invalide",
-      });
-    }
-  }
-
-  const { title, type, duration = 0, questions } = req.body;
-  const course = await Course.findById(courseId).populate("assetFolder");
-
-  const section = await Section.findById(sectionId);
-  if (!course || !section) {
-    return next(new AppError("Course or Section not found", 404));
-  }
-
-  let url = "";
-
-  if (type === "video" && req.files && req.files.video) {
-    const folder = course.assetFolder;
-    const video = await uploadToCloudinary(req.files.video, folder);
-    url = video.secure_url;
-  }
-
-  // Créer la leçon
-  const lecture = await Lecture.create({ ...req.body, url, duration });
-
-  section.lectures.push(lecture._id);
-  course.totalDuration = course.totalDuration + duration;
-  await section.save();
-  await course.save();
-
-  res.status(201).json({ status: "success", data: lecture });
-});
-
-/*** Mise à jour d'une leçon ***/
-exports.updateLecture = catchAsync(async (req, res, next) => {
-  const { lectureId, courseId, sectionId } = req.params;
-  const { title, type } = req.body;
-
-  const course = await Course.findById(courseId);
-  const section = await Section.findById(sectionId);
-  const lecture = await Lecture.findById(lectureId);
-
-  if (!course || !section || !lecture) {
-    return next(new AppError("Course, Section, or Lecture not found", 404));
-  }
-  if (req.body.questions) {
-    try {
-      req.body.questions = JSON.parse(req.body.questions);
-    } catch (error) {
-      return res.status(400).json({
-        status: "fail",
-        message: "Format des questions invalide",
-      });
-    }
-  }
-  if (type === "video" && req.files && req.files.video) {
-    const asset_folder = course.assetFolder;
-    if (lecture.url) {
-      const decodedImageUrl = decodeURIComponent(lecture.url);
-      const imageName = decodedImageUrl.split("/").pop().split(".")[0];
-      const publicId = asset_folder + "/" + imageName;
-      await deleteResourceFromCloudinary(publicId, "video");
-    }
-
-    const video = await uploadToCloudinary(req.files.video, asset_folder);
-    req.body.url = video.secure_url;
-  }
-
-  const updatedLecture = await Lecture.findByIdAndUpdate(lectureId, req.body, {
-    new: true,
-    runValidators: true,
-  });
-
-  res.status(200).json({ status: "success", data: updatedLecture });
-});
-
-/*** Suppression d'une leçon ***/
-exports.deleteLecture = catchAsync(async (req, res, next) => {
-  const { lectureId, courseId, sectionId } = req.params;
-
-  const course = await Course.findById(courseId);
-  const section = await Section.findById(sectionId);
-  const lecture = await Lecture.findById(lectureId);
-
-  if (!course || !section || !lecture) {
-    return next(new AppError("Course, Section, or Lecture not found", 404));
-  }
-
-  await Lecture.deleteLectureWithCloudinary(lecture._id);
-
-  section.lectures.pull(lectureId);
-  await section.save();
-
-  res.status(204).json({ status: "success", message: "Lecture deleted" });
-});
-
-/**get lecture */
-
-exports.getLecture = catchAsync(async (req, res) => {
-  const { courseId, sectionId, lectureId } = req.params;
-
-  const course = await Course.findById(courseId)
-    .populate("sections") // Remplir les sections du cours
-    .exec();
-
-  if (!course) {
-    return res.status(404).json({ message: "Course not found" });
-  }
-
-  // 2. Trouver la section par son ID
-  const section = course.sections.find(
-    (section) => section._id.toString() === sectionId
-  );
-
-  if (!section) {
-    return res.status(404).json({ message: "Section not found" });
-  }
-
-  // 3. Trouver la lecture dans la section par son ID
-  const lecture = await Lecture.findById(lectureId).exec();
-
-  if (!lecture) {
-    return res.status(404).json({ message: "Lecture not found" });
-  }
-
-  // 4. Retourner la lecture
-  return res.status(200).json(lecture);
 });
 
 exports.getCourseStats = catchAsync(async (req, res, next) => {
@@ -439,7 +437,6 @@ exports.getCourseStats = catchAsync(async (req, res, next) => {
     return next(new AppError("Utilisateur non trouvé", 404));
   }
 
-  // Si l'utilisateur est admin, récupérer tous les cours
   if (user.role === "admin") {
     courses = await Course.find()
       .populate({
@@ -450,16 +447,12 @@ exports.getCourseStats = catchAsync(async (req, res, next) => {
         path: "sections",
         select: "title lectures",
       });
-  }
-  // Si c'est un instructeur, récupérer seulement ses cours
-  else if (user.role === "instructor") {
+  } else if (user.role === "instructor") {
     courses = await Course.find({ instructor: user._id }).populate({
       path: "sections",
       select: "title lectures",
     });
-  }
-  // Si c'est un étudiant, retourner une erreur
-  else {
+  } else {
     return next(new AppError("Vous n'avez pas accès à cette ressource", 403));
   }
 
@@ -484,217 +477,204 @@ exports.getCourseStats = catchAsync(async (req, res, next) => {
   });
 });
 
-exports.recommend = catchAsync(async (req, res, next) => {
-  const userId = req.user._id;
+// Mise à jour de la fonction pour accepter ou rejeter un cours
 
-  const interactions = await Interaction.find({ student: userId });
+exports.getStatistics = catchAsync(async (req, res) => {
+  const totalCourses = await Course.countDocuments();
 
-  if (!interactions || interactions.length === 0) {
-    return res.status(404).json({
-      status: "fail",
-      message: "Aucune interaction trouvée pour cet utilisateur",
-    });
-  }
+  const coursesByCategory = await Course.aggregate([
+    {
+      $group: {
+        _id: "$category",
+        totalCourses: { $sum: 1 },
+      },
+    },
+  ]);
 
-  const tagScores = interactions.reduce((scores, interaction) => {
-    const { feature: tag, weight } = interaction;
+  // Récupérer les IDs des rôles
+  const instructorRole = await Role.findOne({ name: "Instructor" });
+  const studentRole = await Role.findOne({ name: "student" });
 
-    if (scores[tag]) {
-      scores[tag] += weight;
-    } else {
-      scores[tag] = weight;
-    }
+  const totalInstructors = instructorRole
+    ? await User.countDocuments({ role: instructorRole._id })
+    : 0;
 
-    return scores;
-  }, {});
-
-  const popularTags = Object.keys(tagScores).sort(
-    (a, b) => tagScores[b] - tagScores[a]
-  );
-
-  const recommendedCourses = await Course.find({
-    tags: { $in: popularTags },
-  })
-    .populate("instructor", "name")
-    .select(
-      "title tags instructor imageUrl level price totalStudent averageRating"
-    );
-
-  recommendedCourses.sort((a, b) => {
-    const scoreA = a.tags.reduce((sum, tag) => sum + (tagScores[tag] || 0), 0);
-    const scoreB = b.tags.reduce((sum, tag) => sum + (tagScores[tag] || 0), 0);
-    return scoreB - scoreA;
-  });
+  const totalStudents = studentRole
+    ? await User.countDocuments({ role: studentRole._id })
+    : 0;
 
   res.status(200).json({
     status: "success",
-    results: recommendedCourses.length,
-    courses: recommendedCourses,
+    data: {
+      totalCourses,
+      coursesByCategory,
+      totalInstructors,
+      totalStudents,
+    },
   });
 });
 
-exports.accepteRejetCours = catchAsync(async (req, res, next) => {
-  const { courseId } = req.params;
-  const cours = await Course.findById(courseId).populate({
-    path: "instructor",
-    select: "email name",
-  });
-  const { instructor } = cours;
-  const emailService = new EmailService(instructor);
+// const mergeCourseUpdates = async (draftCourseId, originalCourseId, session) => {
+//   const originalCourse = await Course.findById(originalCourseId)
+//     .populate({
+//       path: "sections",
+//       populate: { path: "lectures" },
+//     })
+//     .populate("resources")
+//     .session(session);
+//   const draftCourse = await Course.findById(draftCourseId)
+//     .populate({
+//       path: "sections",
+//       populate: { path: "lectures" },
+//     })
+//     .populate("resources")
+//     .session(session);
 
-  const { status, message } = req.body;
-  let text = "";
-  const updatedCourse = await Course.findByIdAndUpdate(
-    courseId,
-    { status },
-    {
-      new: true,
-      runValidators: true,
-    }
-  );
-  if (status === "pending") {
-    text =
-      "désole votre cour est refusé tu trouve ci desous tous les détails" +
-      "\n";
-    message;
-    await emailService.sendRejetAcceptationEmail("refus", text);
-  } else if (status === "published") {
-    text = "votre cour est approuvé" + message;
-    await emailService.sendRejetAcceptationEmail("success", text);
-  }
-  res.status(201).json({ status: "ok" });
-});
+//   if (!originalCourse || !draftCourse) {
+//     throw new Error("Cours original ou brouillon non trouvé");
+//   }
 
-exports.getStatistics = async (req, res) => {
-  try {
-    const totalCourses = await Course.countDocuments();
+//   // Étape 1 : Construire la nouvelle liste de sections
+//   const newSections = [];
 
-    const coursesByCategory = await Course.aggregate([
-      {
-        $group: {
-          _id: "$category",
-          totalCourses: { $sum: 1 },
-        },
-      },
-    ]);
+//   // Traiter les sections originales
+//   for (const originalSection of originalCourse.sections) {
+//     if (originalSection.draftVersion) {
+//       const draftSection = draftCourse.sections.find(
+//         (s) => s._id.toString() === originalSection.draftVersion.toString()
+//       );
+//       if (draftSection) {
+//         // Scénario 1 : Mettre à jour la section
+//         originalSection.title = draftSection.title;
 
-    const totalInstructors = await User.countDocuments({ role: "instructor" });
+//         // Traiter les leçons
+//         const newLectures = [];
+//         for (const originalLecture of originalSection.lectures) {
+//           if (originalLecture.draftVersion) {
+//             const draftLecture = draftSection.lectures.find(
+//               (l) =>
+//                 l._id.toString() === originalLecture.draftVersion.toString()
+//             );
+//             if (draftLecture) {
+//               if (
+//                 originalLecture.type === "video" &&
+//                 originalLecture.url &&
+//                 originalLecture.url !== draftLecture.url
+//               ) {
+//                 const publicId = getPublicId(originalLecture.url);
+//                 await deleteResourceFromCloudinary(publicId, "video");
+//               }
+//               // Scénario 2 : Mettre à jour la leçon
+//               originalLecture.title = draftLecture.title;
+//               originalLecture.type = draftLecture.type;
+//               originalLecture.url = draftLecture.url;
+//               originalLecture.duration = draftLecture.duration;
+//               originalLecture.questions = draftLecture.questions;
+//               originalLecture.draftVersion = null;
+//               await originalLecture.save({ session });
+//               newLectures.push(originalLecture._id);
+//               draftSection.lectures = draftSection.lectures.filter(
+//                 (l) => l._id.toString() !== draftLecture._id.toString()
+//               );
+//               await draftSection.save({ session });
+//               await Lecture.findByIdAndDelete(draftLecture._id, { session });
+//             } else {
+//               // Scénario 5 : Supprimer la leçon
+//               await Lecture.deleteLectureWithCloudinary(
+//                 originalLecture._id,
+//                 session
+//               );
 
-    const totalStudents = await User.countDocuments({ role: "student" });
+//               // Retirer la leçon originale de originalSection.lectures
+//               originalSection.lectures = originalSection.lectures.filter(
+//                 (l) => l._id.toString() !== originalLecture._id.toString()
+//               );
+//               await originalSection.save({ session });
+//             }
+//           }
+//         }
 
-    res.status(200).json({
-      status: "success",
-      data: {
-        totalCourses,
-        coursesByCategory,
-        totalInstructors,
-        totalStudents,
-      },
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, message: "Erreur serveur", error });
-  }
-};
+//         // Scénario 3 : Ajouter les nouvelles leçons
+//         const newDraftLectures = draftSection.lectures.filter(
+//           (l) =>
+//             !originalSection.lectures.some(
+//               (ol) => ol.draftVersion?.toString() === l._id.toString()
+//             )
+//         );
+//         newLectures.push(...newDraftLectures.map((l) => l._id));
 
-// exports.getMyCourses = catchAsync(async (req, res) => {
-//   const stats = await Course.aggregate([
-//     // 1️⃣ Filtrer les cours de l'instructeur
-//     {
-//       $match: { instructor: req.user._id },
-//     },
+//         originalSection.lectures = newLectures;
+//         originalSection.draftVersion = null;
+//         await originalSection.save({ session });
+//         await Section.findByIdAndDelete(draftSection._id, { session });
+//         newSections.push(originalSection._id);
+//       } else {
+//         // Scénario 6 : Supprimer la section
+//         await Section.deleteSectionWithLecture(originalSection._id, session);
 
-//     // 2️⃣ Jointure avec `Enrollment`
-//     {
-//       $lookup: {
-//         from: "enrollments",
-//         localField: "_id",
-//         foreignField: "courseId",
-//         as: "enrollments",
-//       },
-//     },
+//         // Retirer la section originale de originalCourse.sections
+//         originalCourse.sections = originalCourse.sections.filter(
+//           (s) => s._id.toString() !== originalSection._id.toString()
+//         );
+//         await originalCourse.save({ session });
+//       }
+//     }
+//   }
 
-//     { $unwind: { path: "$enrollments", preserveNullAndEmptyArrays: true } },
-
-//     // 3️⃣ Jointure avec `Progress`
-//     {
-//       $lookup: {
-//         from: "progresses",
-//         localField: "enrollments.progress",
-//         foreignField: "_id",
-//         as: "progressDetails",
-//       },
-//     },
-
-//     { $unwind: { path: "$progressDetails", preserveNullAndEmptyArrays: true } },
-
-//     // 4️⃣ Jointure avec `sections`
-//     {
-//       $lookup: {
-//         from: "sections",
-//         localField: "sections",
-//         foreignField: "_id",
-//         as: "sectionsDetails",
-//       },
-//     },
-
-//     // Ajouter le champ `firstSectionId` (au lieu de toute la section)
-//     {
-//       $addFields: {
-//         firstSectionId: { $arrayElemAt: ["$sectionsDetails._id", 0] },
-//       },
-//     },
-
-//     { $unwind: { path: "$sectionsDetails", preserveNullAndEmptyArrays: true } },
-
-//     // 5️⃣ Jointure avec `lectures`
-//     {
-//       $lookup: {
-//         from: "lectures",
-//         localField: "sectionsDetails.lectures",
-//         foreignField: "_id",
-//         as: "lecturesDetails",
-//       },
-//     },
-
-//     // Ajouter le champ `firstLecture`
-//     {
-//       $addFields: {
-//         firstLecture: { $arrayElemAt: ["$sectionsDetails.lectures", 0] },
-//       },
-//     },
-
-//     { $unwind: { path: "$lecturesDetails", preserveNullAndEmptyArrays: true } },
-
-//     // 6️⃣ Grouper par cours et calculer les stats
-//     {
-//       $group: {
-//         _id: "$_id",
-//         title: { $first: "$title" },
-//         level: { $first: "$level" },
-//         category: { $first: "$category" },
-//         imageUrl: { $first: "$imageUrl" },
-//         status: { $first: "$status" },
-//         price: { $first: "$price" },
-//         totalStudents: { $sum: 1 }, // Nombre total d'inscriptions
-//         completedStudents: {
-//           $sum: {
-//             $cond: [
-//               { $gte: ["$progressDetails.progressPercentage", 100] },
-//               1,
-//               0,
-//             ],
+//   // Scénario 4 : Ajouter les nouvelles sections
+//   const newDraftSections = draftCourse.sections.filter(
+//     (s) =>
+//       !originalCourse.sections.some(
+//         (os) => os.draftVersion?.toString() === s._id.toString()
+//       )
+//   );
+//   newSections.push(...newDraftSections.map((s) => s._id));
+//   const updatedResources = [];
+//   for (const draftResource of draftCourse.resources) {
+//     const existingResource = originalCourse.resources.find(
+//       (r) => r._id.toString() === draftResource._id.toString()
+//     );
+//     console.log(draftResource);
+//     if (existingResource) {
+//       // Mettre à jour la ressource existante
+//       existingResource.title = draftResource.title;
+//       existingResource.resourceUrl = draftResource.resourceUrl;
+//       await existingResource.save({ session });
+//       updatedResources.push(existingResource._id);
+//     } else {
+//       // Créer une nouvelle ressource avec un nouvel _id
+//       const newResource = await Resource.create(
+//         [
+//           {
+//             title: draftResource.title,
+//             resourceUrl: draftResource.resourceUrl,
 //           },
-//         },
-//         revenue: { $sum: "$price" }, // Calcul du revenu
-//         totalDuration: { $sum: "$lecturesDetails.duration" }, // Durée totale
-//         firstSection: { $first: "$firstSectionId" }, // 🔹 Premier section _id uniquement
-//         firstLecture: { $first: "$firstLecture" }, // 🔹 Premier vidéo _id uniquement
-//       },
-//     },
+//         ],
+//         { session }
+//       );
+//       updatedResources.push(newResource[0]._id);
+//     }
+//     // Supprimer la ressource brouillon
+//     await Resource.deleteResource(draftResource._id, session);
+//   }
+//   originalCourse.resources = updatedResources;
 
-//     // 7️⃣ Trier par revenu décroissant
-//     { $sort: { revenue: -1 } },
-//   ]);
+//   // Étape 2 : Mettre à jour le cours original
+//   originalCourse.sections = newSections;
+//   // originalCourse.title = draftCourse.title;
+//   originalCourse.description = draftCourse.description;
+//   originalCourse.imageUrl = draftCourse.imageUrl;
+//   originalCourse.level = draftCourse.level;
+//   originalCourse.price = draftCourse.price;
+//   originalCourse.category = draftCourse.category;
+//   originalCourse.tags = draftCourse.tags;
+//   originalCourse.totalDuration = draftCourse.totalDuration;
+//   originalCourse.status = "published";
+//   originalCourse.updatedVersionId = null;
+//   await originalCourse.save({ session });
 
-//   res.json(stats);
-// });
+//   // Étape 3 : Supprimer le cours brouillon
+//   await Course.findByIdAndDelete(draftCourseId, { session });
+
+//   return originalCourse;
+// };

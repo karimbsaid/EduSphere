@@ -9,7 +9,6 @@ export default function ContentItem({
   contentIndex,
   setCourseData,
 }) {
-  console.log("content :", content);
   const handleContentChange = (field, value) => {
     setCourseData((prev) => ({
       ...prev,
@@ -57,19 +56,35 @@ export default function ContentItem({
   return (
     <div className="rounded border p-2">
       <div className="mb-2 flex items-center justify-between">
-        <input
-          type="text"
-          value={content.title}
-          onChange={(e) => handleContentChange("title", e.target.value)}
-          placeholder={`${
-            content.type === "video"
-              ? "Vidéo"
-              : content.type === "quiz"
-              ? "Quiz"
-              : "Texte"
-          } Titre`}
-          className="w-2/3 p-2 border rounded"
-        />
+        <div className="flex flex-col gap-2 w-full">
+          <input
+            type="text"
+            value={content.title}
+            onChange={(e) => handleContentChange("title", e.target.value)}
+            placeholder={`${content.type === "video" ? "Vidéo" : "Quiz"} Titre`}
+            className="w-2/3 p-2 border rounded"
+          />
+          {content.type === "quiz" && (
+            <div className="flex items-center gap-2">
+              <label
+                htmlFor={`quizDuration`}
+                className="text-sm font-medium text-gray-700"
+              >
+                Duration:
+              </label>
+              <input
+                id={`quizDuration`}
+                type="text"
+                placeholder="300 secondes"
+                value={content.duration || ""}
+                onChange={(e) =>
+                  handleContentChange("duration", e.target.value)
+                }
+                className="w-24 px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              />
+            </div>
+          )}
+        </div>
 
         <HiOutlineTrash
           onClick={handleDeleteContent}

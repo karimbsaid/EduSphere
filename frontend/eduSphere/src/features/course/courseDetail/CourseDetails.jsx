@@ -15,10 +15,10 @@ export default function CourseCard({ course }) {
 
   return (
     <Card className="w-full bg-white dark:bg-gray-900 shadow-lg rounded-lg overflow-hidden">
-      <div className="h-48 bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+      <div className="h-86 bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
         <img
           src={course.imageUrl}
-          className="w-full h-full object-fill" // Ajouter ces classes
+          className="w-full h-full object-fill " // Ajouter ces classes
           alt={course.title}
         />
       </div>

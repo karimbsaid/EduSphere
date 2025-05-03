@@ -55,11 +55,12 @@ export const AuthProvider = ({ children }) => {
   };
 
   const userBelongsToGroup = (groupName) => {
-    return user?.role && groupName.includes(user.role);
+    return user?.role && groupName.includes(user?.role?.name);
   };
 
   const logout = () => {
     setUser(null);
+    localStorage.removeItem("token");
   };
 
   // useEffect(() => {

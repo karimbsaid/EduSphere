@@ -8,6 +8,7 @@ function Pagination({
   perPage,
   onPageChange,
 }) {
+  // console.log(currentPage);
   const start = (currentPage - 1) * perPage + 1;
   const end = Math.min(currentPage * perPage, totalCount);
 
@@ -26,12 +27,8 @@ function Pagination({
         {Array.from({ length: totalPages }, (_, i) => i + 1).map((page, i) => (
           <Button
             label={page}
-            outline={true}
-            className={`${
-              currentPage === page
-                ? " bg-black text-white"
-                : "bg-white text-black "
-            }`}
+            outline={currentPage === page ? false : true} // Passer directement un booléen
+            variant="simple"
             key={i}
             onClick={() => onPageChange(page)}
           />

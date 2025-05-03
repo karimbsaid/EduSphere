@@ -30,6 +30,38 @@ export const getProgress = async (courseId, token) => {
   }
 };
 
+export const getListOfMyStudents = async (query = {}, token) => {
+  try {
+    const queryString = new URLSearchParams(query).toString();
+    // console.log(queryString);
+    const response = await fetch(
+      `${API_URL}users/me/my-students?${queryString}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    const data = await response.json();
+    // console.log(data);
+    if (!response.ok) {
+      return {
+        status: "fail",
+        message: data.message || "Erreur lors de la récupération du progrès",
+      };
+    }
+
+    return data;
+  } catch (error) {
+    return {
+      status: "error",
+      message: "Erreur réseau ou serveur",
+    };
+  }
+};
+
 export const enroll = async (courseId, token) => {
   const response = await fetch(`${API_URL}enrollment/${courseId}/enroll`, {
     method: "POST",
@@ -43,17 +75,21 @@ export const enroll = async (courseId, token) => {
 };
 
 export const updateProgress = async (courseId, sectionId, lectureId, token) => {
-  const response = await fetch(
-    `${API_URL}course-enroll/${courseId}/section/${sectionId}/lecture/${lectureId}/update-progress`,
-    {
-      method: "PATCH",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }
-  );
-  if (!response.ok) throw new Error("Erreur lors de enrollment");
-  return response.json();
+  try {
+    const response = await fetch(
+      `${API_URL}enrollment/${courseId}/section/${sectionId}/lecture/${lectureId}/update-progress`,
+      {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    if (!response.ok) throw new Error("Erreur lors de enrollment");
+    return response.json();
+  } catch (error) {
+    throw new Error("something went wrong");
+  }
 };
 
 /**get my enrolled course */
@@ -66,7 +102,7 @@ export const getMyEnrolledCourse = async (token) => {
   });
 
   const data = await response.json();
-  console.log(data);
+  // console.log(data);
   return data;
 };
 
@@ -79,7 +115,7 @@ export const getEnrolledCoursesStats = async (token) => {
   });
 
   const data = await response.json();
-  console.log(data);
+  // console.log(data);
 
   if (!response.ok) throw new Error("Erreur lors de la fetch du stats");
 

@@ -95,8 +95,10 @@ export const updateProfile = async (profileData, token) => {
   return response.json();
 };
 
-export const getMyCourses = async (token) => {
-  const response = await fetch(`${API_URL}users/me/my-courses`, {
+export const getMyCourses = async (query, token) => {
+  const queryString = new URLSearchParams(query).toString();
+
+  const response = await fetch(`${API_URL}users/me/my-courses?${queryString}`, {
     method: "GET",
     headers: {
       Authorization: `Bearer ${token}`,

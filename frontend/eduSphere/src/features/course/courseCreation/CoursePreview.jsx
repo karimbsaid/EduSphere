@@ -10,8 +10,10 @@ import {
   FiFileText,
   FiDollarSign,
 } from "react-icons/fi";
+import QuizLecture from "../../course/courseLecture/QuizLecture";
+import VideoPlayer from "../courseLecture/VideoPlayer";
 
-export default function CoursePreview({ courseData }) {
+export default function CoursePreview({ courseData, isPreview = false }) {
   const [openSection, setOpenSection] = useState(null);
 
   // const totalHours = courseData.sections
@@ -29,12 +31,22 @@ export default function CoursePreview({ courseData }) {
   //   )
   //   .toFixed(1);
 
-  const totalHours = courseData.sections.reduce((total, section) => {
+  const totalSeconds = courseData.sections.reduce((total, section) => {
     const sectionTotal = section.lectures.reduce((sum, content) => {
       return sum + Number(content.duration);
     }, 0);
     return total + sectionTotal;
   }, 0);
+
+  let displayDuration;
+
+  if (totalSeconds >= 3600) {
+    const hours = Math.floor(totalSeconds / 3600);
+    displayDuration = `${hours}h`;
+  } else {
+    const minutes = Math.floor(totalSeconds / 60);
+    displayDuration = `${minutes}min`;
+  }
 
   // const totalHours = 50;
   const coverImage = courseData.isEdit
@@ -52,7 +64,7 @@ export default function CoursePreview({ courseData }) {
 
       <div className="rounded-lg w-full border border-gray-200 bg-white shadow-lg">
         {/* Cover Image Section */}
-        <div className="relative h-64 w-full overflow-hidden rounded-t-lg">
+        <div className="relative h-96 w-full overflow-hidden rounded-t-lg">
           {courseData.coverImage ? (
             <img
               src={coverImage}
@@ -64,6 +76,7 @@ export default function CoursePreview({ courseData }) {
               <FiImage className="h-24 w-24 text-gray-400" />
             </div>
           )}
+
           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-6">
             <h3 className="text-3xl font-bold text-white">
               {courseData.title || "Course Title"}
@@ -83,7 +96,7 @@ export default function CoursePreview({ courseData }) {
             </span>
             <div className="flex items-center text-gray-600">
               <FiClock className="mr-2" />
-              <span className="text-sm">{totalHours} hours</span>
+              <span className="text-sm">{displayDuration} </span>
             </div>
           </div>
 
@@ -137,20 +150,50 @@ export default function CoursePreview({ courseData }) {
                       {section.lectures.map((content, contentIndex) => (
                         <li
                           key={contentIndex}
-                          className="flex items-center text-gray-600"
+                          className="flex flex-col text-gray-600 space-y-2"
                         >
-                          {content.type === "video" && (
-                            <FiPlay className="mr-2" />
-                          )}
-                          {content.type === "quiz" && (
-                            <FiHelpCircle className="mr-2" />
-                          )}
-                          {content.type === "text" && (
-                            <FiFileText className="mr-2" />
-                          )}
-                          <span>
-                            {content.title || `${content.type} content`}
-                          </span>
+                          <div className="flex items-center">
+                            {content.type === "video" && (
+                              <FiPlay className="mr-2" />
+                            )}
+                            {content.type === "quiz" && (
+                              <FiHelpCircle className="mr-2" />
+                            )}
+                            {content.type === "text" && (
+                              <FiFileText className="mr-2" />
+                            )}
+                            <span className="font-medium">
+                              {content.title || `${content.type} content`}
+                            </span>
+                          </div>
+
+                          {/* Render content based on type */}
+                          <div className="ml-6">
+                            {content.type === "video" && (
+                              <VideoPlayer
+                                url={
+                                  content.file
+                                    ? URL.createObjectURL(content.file)
+                                    : content.url
+                                }
+                              />
+                            )}
+
+                            {content.type === "quiz" && (
+                              <QuizLecture
+                                questions={content.questions}
+                                duration={content.duration || 900}
+                                isPreview={isPreview}
+                                onComplete={() => console.log("Quiz completed")}
+                              />
+                            )}
+
+                            {content.type === "text" && (
+                              <p className="text-sm text-gray-700">
+                                {content.text || "No content provided."}
+                              </p>
+                            )}
+                          </div>
                         </li>
                       ))}
                     </ul>
@@ -164,9 +207,8 @@ export default function CoursePreview({ courseData }) {
         {/* Pricing Footer */}
         <div className="border-t px-6 py-4 flex justify-between items-center">
           <div className="flex items-center">
-            <FiDollarSign className="h-6 w-6 text-gray-700 mr-2" />
             <span className="text-2xl font-bold text-gray-900">
-              {courseData.price > 0 ? `${courseData.price}` : "gratuit"}
+              {courseData.price > 0 ? `${courseData.price} TND` : "gratuit"}
             </span>
           </div>
         </div>

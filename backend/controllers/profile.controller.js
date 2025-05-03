@@ -14,10 +14,7 @@ const uploadToCloudinary = async (file, folder) => {
 };
 // Get user details
 exports.getMe = catchAsync(async (req, res, next) => {
-  const user = await User.findById(req.user.id).populate({
-    path: "additionalDetails",
-    select: "+contactNumber",
-  });
+  const user = await User.findById(req.user.id);
   if (!user) {
     return next(new AppError("Utilisateur non trouvé", 404));
   }

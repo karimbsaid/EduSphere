@@ -2,15 +2,16 @@
 import React from "react";
 import Table from "../../ui/TableOff";
 import Badge from "../../ui/Badge";
-import Modal from "../../ui/ModalOff";
+import { Modal } from "../../ui/ModalOff";
 import Button from "../../ui/Button";
 import UserForm from "./UserForm";
 import ConfirmDelete from "../../components/ConfirmDelete";
 import { useAuth } from "../../context/authContext";
 import { deleteUser } from "../../services/apiProfile";
 export default function UserRow({ user }) {
+  console.log(user);
   const { user: authenifiedUser } = useAuth();
-  const { permissions } = authenifiedUser;
+  // const { permissions } = authenifiedUser;
   const { token } = authenifiedUser;
   function formatDate(isoDate) {
     const date = new Date(isoDate);
@@ -26,7 +27,10 @@ export default function UserRow({ user }) {
     instructor: "warning",
     student: "secondary",
   };
-
+  const badgeStatusVariant = {
+    active: "success",
+    blocked: "ghost",
+  };
   const handleDeleteUser = async (userId) => {
     try {
       await deleteUser(token, userId);
@@ -53,42 +57,46 @@ export default function UserRow({ user }) {
           </div>
         </Table.Cell>
         <Table.Cell>
-          <Badge variant={badgeVariant[user.role]} text={user.role} />
+          <Badge variant={badgeVariant[user.role.name]} text={user.role.name} />
         </Table.Cell>
-        <Table.Cell>{formatDate(user.dateInscription)}</Table.Cell>
+        <Table.Cell>{formatDate(user.createdAt)}</Table.Cell>
+        <Table.Cell>{user.additionalDetails.contactNumber || "N/A"}</Table.Cell>
+        <Table.Cell>
+          <Badge
+            variant={badgeStatusVariant[user.status || "active"]}
+            text={user.status || "active"}
+          />
+        </Table.Cell>
         <Table.Cell>
           <div className="flex justify-end gap-2">
-            {permissions?.includes("editUser") && (
-              <Modal>
-                <Modal.Open opens="editUser">
-                  <Button label="Éditer" />
-                </Modal.Open>
+            <Modal>
+              <Modal.Open opens="editUser">
+                <Button label="Éditer" />
+              </Modal.Open>
 
-                <Modal.Window name="editUser">
-                  <UserForm user={user} />
-                </Modal.Window>
-              </Modal>
-            )}
-            {permissions?.includes("deleteUser") && (
-              <Modal>
-                <Modal.Open opens="deleteUser">
-                  <Button
-                    variant="ghost"
-                    label="supprimer"
-                    size="sm"
-                    className="text-red-500"
-                  />
-                </Modal.Open>
+              <Modal.Window name="editUser">
+                <UserForm user={user} />
+              </Modal.Window>
+            </Modal>
 
-                <Modal.Window name="deleteUser">
-                  <ConfirmDelete
-                    user={user}
-                    confirmationText={`je suis sure de supprimer l'utilisateur ${user.name}`}
-                    onConfirm={() => handleDeleteUser(user._id)}
-                  />
-                </Modal.Window>
-              </Modal>
-            )}
+            <Modal>
+              <Modal.Open opens="deleteUser">
+                <Button
+                  variant="ghost"
+                  label="supprimer"
+                  size="sm"
+                  className="text-red-500"
+                />
+              </Modal.Open>
+
+              <Modal.Window name="deleteUser">
+                <ConfirmDelete
+                  user={user}
+                  confirmationText={`je suis sure de supprimer l'utilisateur ${user.name}`}
+                  onConfirm={() => handleDeleteUser(user._id)}
+                />
+              </Modal.Window>
+            </Modal>
           </div>
         </Table.Cell>
       </Table.Row>

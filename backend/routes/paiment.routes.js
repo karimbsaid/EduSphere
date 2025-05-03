@@ -6,7 +6,7 @@ router.get("/verify", paimentController.verify);
 router.get(
   "/",
   auth.protect,
-  auth.restrictTo("admin", "instructor"),
+  auth.restrictTo("Admin", "Instructor"),
   paimentController.getAllPaiements
 );
 

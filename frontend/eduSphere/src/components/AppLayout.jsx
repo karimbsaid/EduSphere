@@ -11,10 +11,13 @@ export default function AppLayout() {
   const [isChatOpen, setIsChatOpen] = useState(false);
 
   return (
-    <div className="flex  min-h-screen bg-gray-100 dark:bg-gray-900">
-      <div className="hidden md:block">
+    <div className="flex min-h-screen bg-gray-100 dark:bg-gray-900">
+      {/* Sidebar desktop : fixe lors du défilement */}
+      <div className="hidden md:block fixed top-0 left-0 h-screen z-30">
         <SideBar courseId={courseId} sectionId={sectionId} />
       </div>
+
+      {/* Overlay pour mobile */}
       {isSidebarOpen && (
         <div
           className="fixed inset-0 bg-black/50 z-40 md:hidden"
@@ -22,11 +25,11 @@ export default function AppLayout() {
         />
       )}
 
-      {/* Sidebar mobile */}
+      {/* Sidebar mobile : coulissante */}
       <div
         className={`fixed md:hidden z-50 transform transition-transform duration-300 ${
           isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
+        } top-0 left-0 h-screen`}
       >
         <SideBar
           courseId={courseId}
@@ -34,7 +37,10 @@ export default function AppLayout() {
           onClose={() => setIsSidebarOpen(false)}
         />
       </div>
-      <main className="flex-1 overflow-auto w-full">
+
+      {/* Contenu principal */}
+      <main className="flex-1 overflow-auto w-full md:ml-64">
+        {/* Bouton menu mobile */}
         {!isSidebarOpen && (
           <button
             onClick={() => setIsSidebarOpen(true)}
@@ -45,6 +51,8 @@ export default function AppLayout() {
         )}
         <Outlet />
       </main>
+
+      {/* Chatbot */}
       <ChatbotButton
         isOpen={isChatOpen}
         onClick={() => setIsChatOpen(!isChatOpen)}

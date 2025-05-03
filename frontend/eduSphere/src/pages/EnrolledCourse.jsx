@@ -7,10 +7,11 @@ import { HiMiniMagnifyingGlass } from "react-icons/hi2";
 import EnrolledCourseTab from "../features/course/enrolledCourses/EnrolledCourseTab";
 import { useSearchParams } from "react-router-dom";
 import Button from "../ui/Button";
+import Spinner from "../ui/Spinner";
 
 export default function EnrolledCourse() {
   const { user } = useAuth();
-  const token = user.token;
+  const token = user?.token;
   const [enrolledCourses, setEnrolledCourses] = useState([]);
   const [filteredCourses, setFilteredCourses] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -86,13 +87,24 @@ export default function EnrolledCourse() {
       search: "",
     });
   };
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen bg-gray-100">
+        <Spinner size="lg" />
+        <div className="ml-4 text-lg">Chargement...</div>
+      </div>
+    );
+  }
+  if (error) {
+    return <div className="text-red-500">{error}</div>;
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
         <h1 className="text-3xl font-bold">Mes cours</h1>
         <div className="flex flex-col sm:flex-row gap-4 mt-4 md:mt-0">
-          <Input
+          {/*<Input
             placeholder="Rechercher dans mes cours..."
             className="w-full sm:w-64"
             icon={HiMiniMagnifyingGlass}
@@ -111,22 +123,22 @@ export default function EnrolledCourse() {
               <DropDown.Item value="marketing">Marketing</DropDown.Item>
             </DropDown.Content>
           </DropDown>
-          {/* Bouton Clear Filters */}
           <Button
             onClick={handleClearFilters}
             className="bg-red-400 text-white p-2 rounded cursor-pointer"
             label="Clear Filters"
-          />
+          />*/}
         </div>
       </div>
-
-      {isLoading ? (
-        <div>Chargement...</div>
-      ) : error ? (
-        <div className="text-red-500">{error}</div>
-      ) : (
-        <EnrolledCourseTab enrolledCourses={filteredCourses} />
-      )}
+      <div className="p-4">
+        {filteredCourses.length === 0 ? (
+          <div className="text-center text-lg font-semibold text-gray-500">
+            Aucun cours trouvé.
+          </div>
+        ) : (
+          <EnrolledCourseTab enrolledCourses={filteredCourses} />
+        )}
+      </div>
     </div>
   );
 }

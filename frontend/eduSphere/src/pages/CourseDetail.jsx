@@ -11,11 +11,12 @@ import ReviewCard from "../features/course/courseDetail/ReviewCard";
 import { pay } from "../services/apiPayment";
 import Spinner from "../ui/Spinner"; // 👉 Assure-toi que ce chemin est correct
 
-function CourseDetail() {
+export default function CourseDetailPage() {
   const { courseId } = useParams();
   const [courseDetail, setCourseDetail] = useState({});
   const [reviews, setReviews] = useState([]);
   const [isEnrolled, setIsEnrolled] = useState(false);
+  const [isInstructor, setIsInstructor] = useState(false);
   const [openSection, setOpenSection] = useState("section-1");
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -25,13 +26,14 @@ function CourseDetail() {
   const token = user?.token;
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchCourseAndReviews = async () => {
       setIsLoading(true);
       try {
         const [courseData, reviewData] = await Promise.all([
           getCourseDetail(courseId),
           getCourseReviews(courseId),
         ]);
+
         if (courseData.status === "fail") {
           navigate("/notfound");
           return;
@@ -39,7 +41,12 @@ function CourseDetail() {
 
         const course = courseData.course;
 
-        if (token) {
+        // Vérifie si l'utilisateur connecté est l'instructeur
+        const isUserInstructor = token && user?._id === course.instructor?._id;
+        setIsInstructor(isUserInstructor);
+
+        // Si l'utilisateur est inscrit, récupère sa progression
+        if (token && !isUserInstructor) {
           const progressResponse = await getProgress(courseId, token);
           if (progressResponse.status === "success") {
             setIsEnrolled(true);
@@ -51,9 +58,7 @@ function CourseDetail() {
 
         if (reviewData.status === "success") {
           setReviews(reviewData.reviews);
-          setError(null);
         } else {
-          setReviews([]);
           setError(reviewData.message || "Erreur lors du chargement des avis");
         }
       } catch (err) {
@@ -62,48 +67,53 @@ function CourseDetail() {
         } else {
           setError("Une erreur s'est produite, veuillez réessayer.");
         }
-
         setReviews([]);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchData();
-  }, [courseId, token, navigate]);
+    fetchCourseAndReviews();
+  }, [courseId, token, navigate, user]);
 
-  const handleEnrollCourse = async () => {
+  const handleEnrollment = async () => {
     if (courseDetail.price > 0) {
-      const response = await pay(courseDetail._id, token);
-      window.open(response.paymentUrl);
+      const paymentResponse = await pay(courseDetail._id, token);
+      window.open(paymentResponse.paymentUrl);
     }
-    const response = await enroll(courseDetail._id, token);
-    if (response.status === "success") {
-      const { progress } = response.enrollment;
+
+    const enrollmentResponse = await enroll(courseDetail._id, token);
+    if (enrollmentResponse.status === "success") {
+      const { currentSection, currentLecture } =
+        enrollmentResponse.enrollment.progress;
       navigate(
-        `/course/${courseId}/chapter/${progress.currentSection}/lecture/${progress.currentLecture}`
+        `/course/${courseId}/chapter/${currentSection}/lecture/${currentLecture}`
       );
     }
   };
 
-  const handleContinueWatching = () => {
-    const currentSection = courseDetail.progress?.currentSection;
-    const currentLecture = courseDetail.progress?.currentLecture;
+  const handleContinueCourse = () => {
+    const { currentSection, currentLecture } = courseDetail.progress;
     navigate(
       `/course/${courseId}/chapter/${currentSection}/lecture/${currentLecture}`
     );
   };
 
-  const handleSectionToggle = (sectionId) => {
-    setOpenSection(openSection === sectionId ? null : sectionId);
+  const handlePreviewCourse = () => {
+    navigate(`/course/${courseId}/preview`);
   };
 
-  const handleWatchCourse = () => {
-    if (token) {
-      isEnrolled ? handleContinueWatching() : handleEnrollCourse();
-    } else {
-      navigate("/login");
-    }
+  const handleCourseAction = () => {
+    if (!token) return navigate("/login");
+
+    if (isInstructor) return handlePreviewCourse();
+    if (isEnrolled) return handleContinueCourse();
+
+    return handleEnrollment();
+  };
+
+  const toggleSection = (sectionId) => {
+    setOpenSection((prev) => (prev === sectionId ? null : sectionId));
   };
 
   if (isLoading) {
@@ -117,15 +127,15 @@ function CourseDetail() {
 
   return (
     <>
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-6 px-4 container mx-auto">
-        <div className="md:col-span-3 space-y-6 w-full">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 px-4 container mx-auto">
+        <div className="md:col-span-2 space-y-6 w-full">
           <CourseCard course={courseDetail} />
           {courseDetail.sections?.map((section) => (
             <CourseSection
               key={section._id}
               section={section}
               isOpen={openSection === section._id}
-              onToggle={() => handleSectionToggle(section._id)}
+              onToggle={() => toggleSection(section._id)}
               onLectureClick={() => console.log("ok")}
             />
           ))}
@@ -133,11 +143,15 @@ function CourseDetail() {
         <div className="md:col-span-2">
           <CourseIncludes
             courseDetail={courseDetail}
-            handleWatchCourse={handleWatchCourse}
+            onActionClick={handleCourseAction}
+            isInstructor={isInstructor}
           />
         </div>
       </div>
-      <h1 className="font-bold my-2 ml-2">Les reviews de nos étudiants</h1>
+
+      {reviews.length > 0 && (
+        <h1 className="font-bold my-2 ml-2">Les reviews de nos étudiants</h1>
+      )}
       <div className="mx-2">
         {reviews.map((rev, index) => (
           <ReviewCard key={index} review={rev} />
@@ -146,5 +160,3 @@ function CourseDetail() {
     </>
   );
 }
-
-export default CourseDetail;

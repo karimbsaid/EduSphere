@@ -3,17 +3,18 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import Input from "../../ui/Input";
 import DropDown from "../../ui/DropDownn";
 import Button from "../../ui/Button";
-import Badge from "../../ui/Badge";
 import { HiMiniStar, HiOutlineStar } from "react-icons/hi2";
-import { HiX } from "react-icons/hi";
-export default function CourseFilter({ filters, onFilterChange }) {
+import { useSearchParams } from "react-router-dom";
+export default function CourseFilter() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  console.log(searchParams);
+  const onFilterChange = (filterType, value) => {
+    const params = new URLSearchParams(searchParams);
+    params.set(filterType, value);
+    setSearchParams(params);
+  };
   const handleClearFilter = () => {
-    onFilterChange("price", "tous");
-    onFilterChange("level", "");
-    onFilterChange("averageRating", "tous");
-    onFilterChange("category", "all");
-    onFilterChange("search", "");
-    onFilterChange("duration", "tous");
+    setSearchParams({});
   };
   const inputRef = useRef(null);
   const handleKeyDown = useCallback(
@@ -22,10 +23,18 @@ export default function CourseFilter({ filters, onFilterChange }) {
         event.key === "Enter" &&
         document.activeElement === inputRef.current
       ) {
-        onFilterChange("search", inputRef.current.value);
+        const value = inputRef.current.value.trim();
+
+        const params = new URLSearchParams(searchParams); // faire une copie
+        if (value) {
+          params.set("search", value);
+        } else {
+          params.delete("search"); // supprimer correctement
+        }
+        setSearchParams(params); // mettre à jour avec la copi
       }
     },
-    [onFilterChange]
+    [searchParams, setSearchParams]
   );
 
   useEffect(() => {
@@ -41,8 +50,8 @@ export default function CourseFilter({ filters, onFilterChange }) {
         <Button onClick={handleClearFilter} label="Réinitialiser les filtres" />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-        <div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-2 justify-items-center">
+        <div className="w-full">
           <h3 className="font-medium mb-2">Recherche</h3>
           <Input ref={inputRef} placeholder="Rechercher des cours..." />
         </div>
@@ -50,81 +59,100 @@ export default function CourseFilter({ filters, onFilterChange }) {
         <div>
           <h3 className="font-medium mb-2">Catégorie</h3>
           <DropDown
-            value={filters.category}
+            value={searchParams.get("category") || "tous"}
             onValueChange={(v) => onFilterChange("category", v)}
           >
             <DropDown.Button label="category" />
             <DropDown.Content>
-              <DropDown.Item value="all">Toutes</DropDown.Item>
-              <DropDown.Item value="development">Développement</DropDown.Item>
-              <DropDown.Item value="design">Design</DropDown.Item>
-              <DropDown.Item value="business">Business</DropDown.Item>
-              <DropDown.Item value="marketing">Marketing</DropDown.Item>
+              <DropDown.Item value="tous">Toutes</DropDown.Item>
+              <DropDown.Item value="PROGRAMMING">Développement</DropDown.Item>
+              <DropDown.Item value="DESIGN">Design</DropDown.Item>
+              <DropDown.Item value="BUSINESS">Business</DropDown.Item>
+              <DropDown.Item value="MARKETING">Marketing</DropDown.Item>
             </DropDown.Content>
           </DropDown>
         </div>
 
         <div>
           <h3 className="font-medium mb-2">Prix</h3>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center flex-wrap gap-3">
             <div className="flex items-center space-x-2 mb-2">
               <input
-                type="checkbox"
-                id="gratuit"
-                checked={filters.price === "free"}
-                onChange={(e) =>
-                  onFilterChange("price", e.target.checked ? "free" : "")
+                type="radio"
+                id="tous"
+                name="price"
+                value="tous"
+                checked={
+                  !searchParams.get("price") ||
+                  searchParams.get("price") === "tous"
                 }
-                className="appearance-none w-5 h-5 border border-gray-300 rounded checked:bg-black checked:border-black"
+                onChange={(e) => onFilterChange("price", e.target.value)}
+                className="appearance-none w-5 h-5 border border-gray-300 rounded-full checked:bg-black checked:border-black"
               />
-              <label htmlFor="gratuit">gratuit</label>
+              <label htmlFor="tous">Tous</label>
+            </div>
+            <div className="flex items-center space-x-2 mb-2">
+              <input
+                type="radio"
+                id="gratuit"
+                name="price"
+                value="free"
+                checked={searchParams.get("price") === "free"}
+                onChange={(e) => onFilterChange("price", e.target.value)}
+                className="appearance-none w-5 h-5 border border-gray-300 rounded-full checked:bg-black checked:border-black"
+              />
+              <label htmlFor="gratuit">Gratuit</label>
             </div>
 
             <div className="flex items-center space-x-2 mb-2">
               <input
-                type="checkbox"
+                type="radio"
                 id="payant"
-                checked={filters.price === "paid"}
-                onChange={(e) =>
-                  onFilterChange("price", e.target.checked ? "paid" : "")
-                }
-                className="appearance-none w-5 h-5 border border-gray-300 rounded checked:bg-black checked:border-black"
+                name="price" // 🔥 même name pour grouper
+                value="paid"
+                checked={searchParams.get("price") === "paid"}
+                onChange={(e) => onFilterChange("price", e.target.value)}
+                className="appearance-none w-5 h-5 border border-gray-300 rounded-full checked:bg-black checked:border-black"
               />
               <label htmlFor="payant">Payant</label>
             </div>
+
             <div className="flex items-center space-x-2 mb-2">
               <input
-                type="checkbox"
+                type="radio"
                 id="low"
-                checked={filters.price === "low"}
+                name="price"
+                checked={searchParams.get("price") === "low"}
                 onChange={(e) =>
                   onFilterChange("price", e.target.checked ? "low" : "")
                 }
-                className="appearance-none w-5 h-5 border border-gray-300 rounded checked:bg-black checked:border-black"
+                className="appearance-none w-5 h-5 border border-gray-300 rounded-full checked:bg-black checked:border-black"
               />
               <label htmlFor="low">moin de 20</label>
             </div>
             <div className="flex items-center space-x-2 mb-2">
               <input
-                type="checkbox"
+                type="radio"
                 id="medium"
-                checked={filters.price === "medium"}
+                name="price"
+                checked={searchParams.get("price") === "medium"}
                 onChange={(e) =>
                   onFilterChange("price", e.target.checked ? "medium" : "")
                 }
-                className="appearance-none w-5 h-5 border border-gray-300 rounded checked:bg-black checked:border-black"
+                className="appearance-none w-5 h-5 border border-gray-300 rounded-full checked:bg-black checked:border-black"
               />
               <label htmlFor="medium">entre 20 et 50</label>
             </div>
             <div className="flex items-center space-x-2 mb-2">
               <input
-                type="checkbox"
+                type="radio"
                 id="high"
-                checked={filters.price === "high"}
+                name="price"
+                checked={searchParams.get("price") === "high"}
                 onChange={(e) =>
                   onFilterChange("price", e.target.checked ? "high" : "")
                 }
-                className="appearance-none w-5 h-5 border border-gray-300 rounded checked:bg-black checked:border-black"
+                className="appearance-none w-5 h-5 border border-gray-300 rounded-full checked:bg-black checked:border-black"
               />
               <label htmlFor="high">50 et plus</label>
             </div>
@@ -134,42 +162,60 @@ export default function CourseFilter({ filters, onFilterChange }) {
         <div>
           <h3 className="font-medium mb-2">Niveau</h3>
           <div className="flex flex-wrap gap-2">
+            <div className="flex items-center space-x-2 mb-2">
+              <input
+                type="radio"
+                id="all_level"
+                name="level"
+                value="tous"
+                checked={
+                  !searchParams.get("level") ||
+                  searchParams.get("level") === "tous"
+                }
+                onChange={(e) => onFilterChange("level", e.target.value)}
+                className="appearance-none w-5 h-5 border border-gray-300 rounded-full checked:bg-black checked:border-black"
+              />
+              <label htmlFor="all_level">Tous</label>
+            </div>
             <div className="flex items-center space-x-2">
               <input
-                type="checkbox"
+                type="radio"
                 id="level_debutant"
-                checked={filters.level === "BEGINNER"}
+                name="level"
+                checked={searchParams.get("level") === "BEGINNER"}
                 onChange={(e) =>
                   onFilterChange("level", e.target.checked ? "BEGINNER" : "")
                 }
-                className="appearance-none w-5 h-5 border border-gray-300 rounded checked:bg-black checked:border-black"
+                className="appearance-none w-5 h-5 border border-gray-300 rounded-full checked:bg-black checked:border-black"
               />
               <label htmlFor="level_debutant">Débutant</label>
             </div>
             <div className="flex items-center space-x-2">
               <input
-                type="checkbox"
+                type="radio"
                 id="intermediaire_level"
-                checked={filters.level === "INTERMEDIATE"}
+                name="level"
+                checked={searchParams.get("level") === "INTERMEDIATE"}
                 onChange={(e) =>
                   onFilterChange(
                     "level",
                     e.target.checked ? "INTERMEDIATE" : ""
                   )
                 }
-                className="appearance-none w-5 h-5 border border-gray-300 rounded checked:bg-black checked:border-black"
+                className="appearance-none w-5 h-5 border border-gray-300 rounded-full checked:bg-black checked:border-black"
               />
               <label htmlFor="intermediaire_level">Intermédiaire</label>
             </div>
             <div className="flex items-center space-x-2">
               <input
-                type="checkbox"
+                type="radio"
                 id="level_avance"
-                checked={filters.level === "AVANCE"}
+                name="level"
+                checked={searchParams.get("level") === "AVANCE"}
                 onChange={(e) =>
                   onFilterChange("level", e.target.checked ? "AVANCE" : "")
                 }
-                className="appearance-none w-5 h-5 border border-gray-300 rounded checked:bg-black checked:border-black"
+                className="appearance-none w-5 h-5 border border-gray-300 rounded-full checked:bg-black checked:border-black"
               />
               <label htmlFor="level_avance">Avancé</label>e
             </div>
@@ -180,16 +226,34 @@ export default function CourseFilter({ filters, onFilterChange }) {
           <div className="flex flex-wrap gap-2">
             <div className="flex items-center space-x-2">
               <input
-                type="checkbox"
+                type="radio"
+                id="all_rating"
+                name="rating"
+                value="tous"
+                checked={
+                  !searchParams.get("averageRating") ||
+                  searchParams.get("averageRating") === "tous"
+                }
+                onChange={(e) =>
+                  onFilterChange("averageRating", e.target.value)
+                }
+                className="appearance-none w-5 h-5 border border-gray-300 rounded-full checked:bg-black checked:border-black"
+              />
+              <label htmlFor="all_rating">Tous</label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <input
+                type="radio"
                 id="high_rating"
-                checked={filters.averageRating === "HIGH"}
+                name="rating"
+                checked={searchParams.get("averageRating") === "HIGH"}
                 onChange={(e) =>
                   onFilterChange(
                     "averageRating",
                     e.target.checked ? "HIGH" : ""
                   )
                 }
-                className="appearance-none w-5 h-5 border border-gray-300 rounded checked:bg-black checked:border-black"
+                className="appearance-none w-5 h-5 border border-gray-300 rounded-full checked:bg-black checked:border-black"
               />
               <label htmlFor="high_rating" className="flex items-center gap-1">
                 {[1, 2, 3, 4, 5].map((star) => (
@@ -200,16 +264,17 @@ export default function CourseFilter({ filters, onFilterChange }) {
             </div>
             <div className="flex items-center space-x-2">
               <input
-                type="checkbox"
+                type="radio"
                 id="medium_rating"
-                checked={filters.averageRating === "MEDIUM"}
+                name="rating"
+                checked={searchParams.get("averageRating") === "MEDIUM"}
                 onChange={(e) =>
                   onFilterChange(
                     "averageRating",
                     e.target.checked ? "MEDIUM" : ""
                   )
                 }
-                className="appearance-none w-5 h-5 border border-gray-300 rounded checked:bg-black checked:border-black"
+                className="appearance-none w-5 h-5 border border-gray-300 rounded-full checked:bg-black checked:border-black"
               />
               <label
                 htmlFor="medium_rating"
@@ -225,12 +290,13 @@ export default function CourseFilter({ filters, onFilterChange }) {
             <div className="flex items-center space-x-2">
               <input
                 id="low_rating"
-                type="checkbox"
-                checked={filters.averageRating === "LOW"}
+                type="radio"
+                name="rating"
+                checked={searchParams.get("averageRating") === "LOW"}
                 onChange={(e) =>
                   onFilterChange("averageRating", e.target.checked ? "LOW" : "")
                 }
-                className="appearance-none w-5 h-5 border border-gray-300 rounded checked:bg-black checked:border-black"
+                className="appearance-none w-5 h-5 border border-gray-300 rounded-full checked:bg-black checked:border-black"
               />
               <label htmlFor="low_rating" className="flex items-center gap-1">
                 {[1, 2, 3].map((star) => (
@@ -249,37 +315,55 @@ export default function CourseFilter({ filters, onFilterChange }) {
           <div className="flex flex-wrap gap-2">
             <div className="flex items-center space-x-2">
               <input
-                type="checkbox"
+                type="radio"
+                id="all_duration"
+                name="duration"
+                value="tous"
+                checked={
+                  !searchParams.get("duration") ||
+                  searchParams.get("duration") === "tous"
+                }
+                onChange={(e) => onFilterChange("duration", e.target.value)}
+                className="appearance-none w-5 h-5 border border-gray-300 rounded-full checked:bg-black checked:border-black"
+              />
+              <label htmlFor="all_duration">Tous</label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <input
+                type="radio"
                 id="short_duration"
-                checked={filters.duration === "short"}
+                name="duration"
+                checked={searchParams.get("duration") === "short"}
                 onChange={(e) =>
                   onFilterChange("duration", e.target.checked ? "short" : "")
                 }
-                className="appearance-none w-5 h-5 border border-gray-300 rounded checked:bg-black checked:border-black"
+                className="appearance-none w-5 h-5 border border-gray-300 rounded-full checked:bg-black checked:border-black"
               />
               <label htmlFor="short_duration">moin de 3 heures</label>
             </div>
             <div className="flex items-center space-x-2">
               <input
-                type="checkbox"
+                type="radio"
                 id="medium_duration"
-                checked={filters.duration === "medium"}
+                name="duration"
+                checked={searchParams.get("duration") === "medium"}
                 onChange={(e) =>
                   onFilterChange("duration", e.target.checked ? "medium" : "")
                 }
-                className="appearance-none w-5 h-5 border border-gray-300 rounded checked:bg-black checked:border-black"
+                className="appearance-none w-5 h-5 border border-gray-300 rounded-full checked:bg-black checked:border-black"
               />
               <label htmlFor="medium_duration">entre 3 et 10 heures</label>
             </div>
             <div className="flex items-center space-x-2">
               <input
-                type="checkbox"
+                type="radio"
                 id="high_duration"
-                checked={filters.duration === "high"}
+                name="duration"
+                checked={searchParams.get("duration") === "high"}
                 onChange={(e) =>
                   onFilterChange("duration", e.target.checked ? "high" : "")
                 }
-                className="appearance-none w-5 h-5 border border-gray-300 rounded checked:bg-black checked:border-black"
+                className="appearance-none w-5 h-5 border border-gray-300 rounded-full checked:bg-black checked:border-black"
               />
               <label htmlFor="high_duration">10 heures et plus</label>
             </div>
@@ -287,9 +371,9 @@ export default function CourseFilter({ filters, onFilterChange }) {
         </div>
       </div>
 
-      <div className="flex justify-between items-center mt-6">
+      {/* <div className="flex justify-between items-center mt-6">
         <div className="flex flex-wrap gap-2">
-          {Object.entries(filters).map(([key, value]) => {
+          {Object.entries(searchParams).map(([key, value]) => {
             if (!value || value === "all" || value === "tous") return null;
 
             let displayValue = value; // Default value
@@ -321,7 +405,7 @@ export default function CourseFilter({ filters, onFilterChange }) {
             );
           })}
         </div>
-      </div>
+      </div> */}
     </div>
   );
 }

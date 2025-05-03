@@ -6,7 +6,7 @@ import Spinner from "../ui/Spinner";
 
 export default function Profile() {
   const { user, setUser } = useAuth();
-  const { token } = user;
+  const token = user.token;
   const [loading, setLoading] = useState(false);
 
   const [profile, setProfile] = useState({

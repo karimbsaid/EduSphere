@@ -3,38 +3,38 @@ import React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/Tabs";
 import CourseProgramme from "./CourseProgramme";
 import CourseResource from "./CourseResource";
-import { useParams, useNavigate } from "react-router-dom";
 
 export default function CourseTabs({ data }) {
-  const { courseId, sectionId } = useParams();
-  const navigate = useNavigate();
-  const handleTabChange = (value) => {
-    if (value === "avis") {
-      navigate(`/course/${courseId}/add-review`);
-    }
-  };
-
   return (
-    <Tabs
-      defaultValue="programme"
-      className="mb-8"
-      onTabChange={handleTabChange}
-    >
-      <TabsList className="mb-4">
-        <TabsTrigger value="programme">Programme</TabsTrigger>
-        <TabsTrigger value="resources">Resources</TabsTrigger>
-        <TabsTrigger value="avis">Avis</TabsTrigger>
-      </TabsList>
+    <div className="mb-8">
+      <Tabs defaultValue="programme" className="w-full">
+        <TabsList className=" bg-gray-100 p-1 rounded-lg mb-4  md:grid-cols-2">
+          <TabsTrigger
+            value="programme"
+            className="px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none
+                data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm
+                hover:bg-gray-200 hover:text-gray-900"
+          >
+            Programme
+          </TabsTrigger>
+          <TabsTrigger
+            value="resources"
+            className="px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none
+                data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm
+                hover:bg-gray-200 hover:text-gray-900"
+          >
+            Resources
+          </TabsTrigger>
+        </TabsList>
 
-      <TabsContent value="programme">
-        <CourseProgramme course={data.courseDetail} />
-      </TabsContent>
+        <TabsContent value="programme">
+          <CourseProgramme course={data.courseDetail} />
+        </TabsContent>
 
-      <TabsContent value="resources">
-        <CourseResource resources={data.resources} />
-      </TabsContent>
-
-      <TabsContent value="avis"></TabsContent>
-    </Tabs>
+        <TabsContent value="resources">
+          <CourseResource resources={data.resources} />
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 }

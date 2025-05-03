@@ -1,13 +1,15 @@
 /* eslint-disable react/prop-types */
 import { HiMiniUsers, HiMiniStar } from "react-icons/hi2";
 import { useNavigate } from "react-router-dom";
+import Badge from "../ui/Badge";
 
 const CourseCard = ({ course }) => {
   const levelStyles = {
-    Beginner: "bg-green-100 text-green-700",
-    intermediate: "bg-orange-200 text-orange-700",
-    advanced: "bg-red-500 text-red-700",
+    BEGINNER: "success",
+    INTERMEDIATE: "warning",
+    ADVANCED: "secondary",
   };
+
   const {
     title,
     imageUrl,
@@ -20,51 +22,65 @@ const CourseCard = ({ course }) => {
   } = course;
   const { name: teacherName } = instructor;
   const { photo: teacherImg } = instructor.additionalDetails;
+
   const navigate = useNavigate();
   const handleNavigate = () => {
     navigate(`/course/${_id}`);
   };
+
   return (
     <div
       onClick={handleNavigate}
-      className="max-w-xs bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300"
+      className="max-w-xs bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-300 cursor-pointer flex flex-col"
     >
-      <div className="p-6">
+      {/* Image avec hauteur fixe */}
+      <div className="relative h-56">
         <img
           src={imageUrl}
-          className="mr-5 rounded-xl w-full h-auto  object-cover"
+          className="w-full h-full object-cover rounded-t-lg"
           alt={title}
         />
-        <div className="flex justify-between my-2">
-          <span
-            className={`rounded-xl px-2 py-1 font-semibold ${levelStyles[level]}`}
-          >
-            {level}
-          </span>
-          <div className="flex">
-            <div className="flex items-center text-gray-500 mr-2 ">
-              <HiMiniUsers className="mr-1" />
-              <span className="text-sm font-normal">{totalStudent}</span>
-            </div>
+        <Badge
+          text={level}
+          style="absolute top-3 left-3 rounded-md px-2 py-1 text-sm font-semibold uppercase"
+          variant={levelStyles[level]}
+        />
+      </div>
 
-            <div className="flex items-center text-gray-500 ">
-              <HiMiniStar className="mr-1 text-yellow-500" />
-              <span className="text-sm font-light">{averageRating}</span>
-            </div>
+      {/* Contenu de la carte */}
+      <div className="p-4 flex flex-col flex-1">
+        {/* Métriques (étudiants et note) */}
+        <div className="flex justify-end gap-3 mb-2">
+          <div className="flex items-center text-gray-500">
+            <HiMiniUsers className="mr-1 text-sm" />
+            <span className="text-xs">{totalStudent}</span>
+          </div>
+          <div className="flex items-center text-gray-500">
+            <HiMiniStar className="mr-1 text-sm text-yellow-500" />
+            <span className="text-xs">{averageRating}</span>
           </div>
         </div>
-        <span className="font-bold text-gray-600 ">{title}</span>
 
-        <div className="flex items-center justify-between">
-          <div className="flex items-center mt-2 ">
+        {/* Titre du cours */}
+        <h3 className="text-l font-bold text-gray-800 mb-2 lowercase flex-1">
+          {title}
+        </h3>
+
+        {/* Footer (instructeur et prix) avec hauteur fixe */}
+        <div className="flex items-center justify-between h-16">
+          <div className="flex items-center">
             <img
               src={teacherImg}
-              className="mr-5 rounded-lg w-9 h-9 object-cover"
-              alt="http://127.0.0.1:8080/images/student.jpg"
+              className="w-12 h-12 rounded-full object-cover mr-2"
+              alt={teacherName}
             />
-            <span className="text-purple-600 font-medium">{teacherName}</span>
+            <span className="text-l text-purple-600 font-medium truncate">
+              {teacherName}
+            </span>
           </div>
-          <span>{price} TND</span>
+          <span className="text-base text-gray-700 font-medium">
+            {price > 0 ? `${price} TND` : "gratuit"}
+          </span>
         </div>
       </div>
     </div>
