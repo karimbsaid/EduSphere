@@ -18,7 +18,7 @@ const Navbar = () => {
             to="/courses"
             className="px-4 py-2 text-sm font-medium hover:bg-gray-700 rounded-md transition-colors"
           >
-            Les Cours
+            Cours
           </Link>
 
           {/* Boutons conditionnels selon l'authentification */}
@@ -27,7 +27,7 @@ const Navbar = () => {
             to="/login"
             className="px-4 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-700 rounded-md transition-colors"
           >
-            S&apos;inscrire
+            Se connecter
           </Link>
 
           {/* Bouton Créer un compte */}

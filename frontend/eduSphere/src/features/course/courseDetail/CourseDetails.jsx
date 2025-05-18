@@ -52,7 +52,7 @@ export default function CourseCard({ course }) {
         </div>
         <div className="flex items-center">
           <FaUserGraduate className="text-green-500" />
-          <span className="ml-1">{course.totalStudent} students</span>
+          <span className="ml-1">{course.totalStudent || 0} students</span>
         </div>
       </div>
     </Card>

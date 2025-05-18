@@ -52,16 +52,16 @@ export default function MainNavigation() {
           path: "/dashboard/payments",
           permission: "manage_payments",
         },
-        {
-          label: "Mes Cours",
-          path: "/dashboard/mycourses",
-          permission: "manage_courses",
-        },
-        {
-          label: "Mes étudiants",
-          path: "/my-courses/my-students",
-          permission: "view_students",
-        },
+        // {
+        //   label: "Mes Cours",
+        //   path: "/dashboard/mycourses",
+        //   permission: "manage_courses",
+        // },
+        // {
+        //   label: "Mes étudiants",
+        //   path: "/my-courses/my-students",
+        //   permission: "view_students",
+        // },
       ],
     },
     {

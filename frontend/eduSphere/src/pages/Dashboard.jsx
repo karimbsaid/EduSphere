@@ -281,8 +281,8 @@ const Dashboard = () => {
             />
             <StatCard
               title="Revenus totaux"
-              value={`${stats.totalRevenue} TND`}
-              change={stats.recentRevenue}
+              value={`${120000} TND`}
+              change={120000}
               changeText="cette période"
             />
             <StatCard

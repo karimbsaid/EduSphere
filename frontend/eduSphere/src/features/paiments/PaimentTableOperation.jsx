@@ -46,7 +46,7 @@ export default function PaimentTableOperation() {
     <>
       <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
         <div>
-          <h1>Gestion des paiments</h1>
+          <h1 className="text-3xl font-bold">Gestion des paiments</h1>
           <h2>Gérez les paiments de la plateforme</h2>
         </div>
         <div className="flex flex-col sm:flex-row gap-4">
