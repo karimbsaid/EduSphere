@@ -1,9 +1,15 @@
-/* eslint-disable react/prop-types */
 import { motion } from "framer-motion";
+import { useContext } from "react";
 import { FiDollarSign } from "react-icons/fi";
+import { CourseContext } from "../../../context/courseContext";
+import { useParams } from "react-router-dom";
 
-export default function CoursePricing({ courseData, handleCourseDataChange }) {
-  console.log(courseData.price);
+export default function CoursePricing() {
+  const { state, dispatch } = useContext(CourseContext);
+  const { courseId } = useParams();
+  const handleCourseDataChange = (field, value) => {
+    dispatch({ type: "SET_FIELD", field, value, courseId });
+  };
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -30,11 +36,11 @@ export default function CoursePricing({ courseData, handleCourseDataChange }) {
             <input
               id="price"
               type="number"
-              value={courseData.price || ""}
+              value={state.price || ""}
               onChange={(e) => handleCourseDataChange("price", e.target.value)}
               placeholder="0.00"
               className={`w-full pl-8 pr-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${
-                courseData.price < 0 ? "border-red-500" : ""
+                state.price < 0 ? "border-red-500" : ""
               }`}
               min="0"
               step="0.01"
@@ -42,7 +48,6 @@ export default function CoursePricing({ courseData, handleCourseDataChange }) {
           </div>
         </div>
 
-        {/* Ajoutez d'autres éléments de tarification ici */}
         <div className="mt-4 p-4 bg-blue-50 rounded-lg">
           <p className="text-sm text-blue-700">
             <span className="font-semibold">Note :</span> Un prix de 0 $ rendra

@@ -1,59 +1,25 @@
 /* eslint-disable react/prop-types */
 import { HiOutlineTrash } from "react-icons/hi2";
 import ContentItem from "./ContentItem";
+import { useContext } from "react";
+import { CourseContext } from "../../../context/courseContext";
 
-export default function Section({ section, sectionIndex, setCourseData }) {
-  const handleSectionChange = (field, value) => {
-    setCourseData((prev) => ({
-      ...prev,
-      sections: prev.sections.map((section, i) =>
-        i === sectionIndex
-          ? {
-              ...section,
-              [field]: value,
-              ...(prev.isEdit && !section.isNew && { updated: true }),
-            }
-          : section
-      ),
-    }));
+export default function Section({ section, sectionIndex }) {
+  const { dispatch } = useContext(CourseContext);
+  const handleSectionChange = (sectionIndex, field, value) => {
+    dispatch({
+      type: "UPDATE_SECTION_FIELD",
+      sectionIndex,
+      field,
+      value,
+    });
   };
 
   const handleAddContent = (type) => {
-    setCourseData((prev) => ({
-      ...prev,
-      sections: prev.sections.map((section, i) =>
-        i === sectionIndex
-          ? {
-              ...section,
-              lectures: [
-                ...section.lectures,
-                {
-                  type,
-                  title: "",
-                  ...(type === "video" && { file: null, duration: "" }),
-                  ...(type === "quiz" && { questions: [] }),
-                  ...(type === "text" && { content: "" }),
-                  ...(prev.isEdit && { isNew: true }), // Ajout de isNew uniquement si prev.isEdit est true
-                },
-              ],
-            }
-          : section
-      ),
-    }));
+    dispatch({ type: "ADD_LECTURE", sectionIndex, contentType: type });
   };
   const handleDeleteSection = () => {
-    setCourseData((prev) => ({
-      ...prev,
-      sections: prev.sections
-        .map((section, i) =>
-          i === sectionIndex
-            ? prev.isEdit && !section.isNew
-              ? { ...section, deleted: true } // Marquer la section comme supprimée si en mode édition et qu'elle n'est pas nouvelle
-              : null // Supprimer la section immédiatement si elle est nouvelle et en mode édition
-            : section
-        )
-        .filter(Boolean), // Filtrer les sections nulles (supprimées)
-    }));
+    dispatch({ type: "DELETE_SECTION", sectionIndex });
   };
 
   return (
@@ -78,7 +44,6 @@ export default function Section({ section, sectionIndex, setCourseData }) {
             content={content}
             sectionIndex={sectionIndex}
             contentIndex={contentIndex}
-            setCourseData={setCourseData}
           />
         </div>
       ))}

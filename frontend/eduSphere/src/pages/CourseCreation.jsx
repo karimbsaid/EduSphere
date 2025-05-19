@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { HiChevronRight, HiChevronLeft } from "react-icons/hi2";
 import CourseDetailsForm from "../features/course/courseCreation/CourseDetailsForm";
 import CourseCurriculum from "../features/course/courseCreation/CourseCurriculum";
@@ -20,6 +20,7 @@ import {
 import { useParams } from "react-router-dom";
 import CourseResources from "../features/course/courseCreation/CourseResources";
 import { useAuth } from "../context/authContext";
+import { CourseContext, CourseProvider } from "../context/courseContext";
 const steps = [
   "Course Details",
   "Curriculum",
@@ -31,19 +32,8 @@ const steps = [
 export default function CourseCreation() {
   const [currentStep, setCurrentStep] = useState(0);
   const [isLoading, setLoading] = useState(false);
+  const { dispatch, state } = useContext(CourseContext);
 
-  const [courseData, setCourseData] = useState({
-    title: "",
-    description: "",
-    category: "",
-    level: "",
-    tags: [],
-    coverImage: null,
-    sections: [],
-    price: 0,
-    resources: [],
-    isEdit: false,
-  });
   const { courseId } = useParams();
   const { user } = useAuth();
   const token = user.token;
@@ -52,16 +42,16 @@ export default function CourseCreation() {
     switch (currentStep) {
       case 0:
         return (
-          courseData.title.trim() !== "" &&
-          courseData.description.trim() !== "" &&
-          courseData.level != "" &&
-          courseData.tags.length > 0 &&
-          courseData.coverImage != null
+          state.title.trim() !== "" &&
+          state.description.trim() !== "" &&
+          state.level != "" &&
+          state.tags.length > 0 &&
+          state.coverImage != null
         );
       case 1:
         return (
-          courseData.sections.length > 0 &&
-          courseData.sections.every((section) => {
+          state.sections.length > 0 &&
+          state.sections.every((section) => {
             const hasValidTitle = section.title.trim() !== "";
             const hasLectures = section.lectures.length > 0;
             console.log(
@@ -101,14 +91,14 @@ export default function CourseCreation() {
         );
       case 2:
         return (
-          courseData.resources.every(
+          state.resources.every(
             (res) =>
               res.title.trim() != "" &&
               (res.file != null || res.resourceUrl != "")
           ) ?? false
         );
       case 3:
-        return courseData.price >= 0 && courseData.price != "";
+        return state.price >= 0 && state.price != "";
       default:
         return true;
     }
@@ -117,17 +107,20 @@ export default function CourseCreation() {
     const fetchCourseDetail = async () => {
       try {
         const { course } = await getCourseDetailEdit(courseId, token);
-        setCourseData({
-          title: course.title,
-          description: course.description,
-          coverImage: course.imageUrl,
-          level: course.level,
-          category: course.category,
-          sections: course.sections,
-          price: Number(course.price) || 0,
-          tags: course.tags,
-          isEdit: courseId ? true : false,
-          resources: course.resources || [],
+        dispatch({
+          type: "SET_ALL_FIELDS",
+          payload: {
+            title: course.title,
+            description: course.description,
+            coverImage: course.imageUrl,
+            level: course.level,
+            category: course.category,
+            sections: course.sections,
+            price: Number(course.price) || 0,
+            tags: course.tags,
+            isEdit: true,
+            resources: course.resources || [],
+          },
         });
       } catch (error) {
         console.error(
@@ -139,7 +132,7 @@ export default function CourseCreation() {
     if (courseId) {
       fetchCourseDetail();
     }
-  }, [courseId, token]);
+  }, [courseId, dispatch, token]);
 
   const handlePrev = () => {
     if (currentStep > 0) {
@@ -171,46 +164,13 @@ export default function CourseCreation() {
       setLoading(false);
     }
   };
-  const handleCourseDataChange = (field, value) => {
-    setCourseData((prev) => {
-      if (courseId) {
-        return { ...prev, [field]: value, updated: true };
-      }
-      return { ...prev, [field]: value };
-    });
-  };
-  // const handleCreateCourse = async () => {
-  //   setCourseStatus("loading");
-
-  //   const course = await createCourse(courseData, token);
-  //   setCourseStatus("success");
-  //   setSectionStatus("loading");
-  //   setVideoStatus("loading");
-  //   courseData.sections.map(async (sec) => {
-  //     const sectiondd = await createSection(course.data._id, sec.title);
-  //     sec.lectures.map(async (content) => {
-  //       await uploadLecture(course.data._id, sectiondd.data._id, content);
-  //     });
-  //   });
-  //   setSectionStatus("success");
-  //   setVideoStatus("success");
-  //   if (courseData.resources) {
-  //     courseData.resources.map(async (res) => {
-  //       const response = await addResource(
-  //         course.data._id,
-  //         res,
-  //         course.data.title
-  //       );
-  //     });
-  //   }
-  // };
 
   const handleCreateCourse = async () => {
     // Création du cours
-    const course = await createCourse(courseData, token);
+    const course = await createCourse(state, token);
 
     // Pour chaque section
-    for (const sec of courseData.sections) {
+    for (const sec of state.sections) {
       const sectionRes = await createSection(course.data._id, sec.title);
 
       // Pour chaque lecture dans la section
@@ -224,8 +184,8 @@ export default function CourseCreation() {
     }
 
     // Pour chaque ressource, s'il y en a
-    if (courseData.resources) {
-      for (const res of courseData.resources) {
+    if (state.resources) {
+      for (const res of state.resources) {
         const resourceLabel = `Création de resource ${res.title}`;
         const response = await addResource(
           course.data._id,
@@ -239,13 +199,13 @@ export default function CourseCreation() {
   const handleUpdateCourse = async () => {
     try {
       // Mettre à jour le cours lui-même
-      if (courseData.updated) {
+      if (state.updated) {
         console.log("course Updated");
-        await updateCourse(courseId, courseData);
+        await updateCourse(courseId, state);
       }
 
       // Traiter les sections séquentiellement
-      for (const sec of courseData.sections) {
+      for (const sec of state.sections) {
         console.log("sec updated", sec);
         if (sec.deleted) {
           await deleteSection(courseId, sec._id);
@@ -286,7 +246,7 @@ export default function CourseCreation() {
           }
         }
       }
-      for (const res of courseData.resources) {
+      for (const res of state.resources) {
         console.log(res);
         if (res.updated) {
           await updateResource(res._id, token, res);
@@ -298,100 +258,82 @@ export default function CourseCreation() {
   };
 
   return (
-    <div className="mx-auto max-w-3xl p-6 bg-white shadow-lg rounded-lg">
-      <h1 className="mb-8 text-3xl font-bold">Create a New Course</h1>
-      <div className="mb-8 flex flex-wrap justify-center md:justify-between space-x-2">
-        {steps.map((step, index) => (
-          <div
-            key={step}
-            className={`flex items-center ${
-              index <= currentStep ? "text-black" : "text-gray-400"
-            } mb-4 md:mb-0 md:flex-row flex-col items-center`}
-          >
+    <CourseProvider>
+      <div className="mx-auto max-w-3xl p-6 bg-white shadow-lg rounded-lg">
+        <h1 className="mb-8 text-3xl font-bold">Create a New Course</h1>
+        <div className="mb-8 flex flex-wrap justify-center md:justify-between space-x-2">
+          {steps.map((step, index) => (
             <div
-              className={`mr-2 h-8 w-8 rounded-full flex items-center justify-center ${
-                index < currentStep
-                  ? "bg-black text-white"
-                  : index === currentStep
-                  ? "bg-black text-white"
-                  : "bg-gray-200 text-gray-400"
-              }`}
+              key={step}
+              className={`flex items-center ${
+                index <= currentStep ? "text-black" : "text-gray-400"
+              } mb-4 md:mb-0 md:flex-row flex-col items-center`}
             >
-              {index + 1}
+              <div
+                className={`mr-2 h-8 w-8 rounded-full flex items-center justify-center ${
+                  index < currentStep
+                    ? "bg-black text-white"
+                    : index === currentStep
+                    ? "bg-black text-white"
+                    : "bg-gray-200 text-gray-400"
+                }`}
+              >
+                {index + 1}
+              </div>
+              <span
+                className={`${
+                  index <= currentStep
+                    ? "text-black font-medium"
+                    : "text-gray-400"
+                }`}
+              >
+                {step}
+              </span>
             </div>
-            <span
-              className={`${
-                index <= currentStep
-                  ? "text-black font-medium"
-                  : "text-gray-400"
-              }`}
-            >
-              {step}
-            </span>
-          </div>
-        ))}
+          ))}
+        </div>
+
+        {currentStep === 0 && <CourseDetailsForm />}
+        {currentStep === 1 && <CourseCurriculum />}
+        {currentStep === 2 && <CourseResources />}
+
+        {currentStep === 3 && <CoursePricing />}
+        {currentStep === 4 && <CoursePreview />}
+
+        <div className="mt-8 flex justify-between">
+          <button
+            onClick={handlePrev}
+            disabled={currentStep === 0}
+            className={`flex items-center px-6 py-2 rounded-lg font-medium ${
+              currentStep === 0
+                ? "bg-gray-400 text-white cursor-not-allowed"
+                : "bg-black text-white hover:bg-gray-800"
+            }`}
+          >
+            <HiChevronLeft className="mr-2 h-4 w-4" />
+            Previous
+          </button>
+          <button
+            onClick={handleNext}
+            disabled={!isValid() || isLoading}
+            className={`flex items-center px-6 py-2 rounded-lg font-medium  bg-black text-white hover:bg-gray-800 ${
+              !isValid() || isLoading
+                ? "bg-gray-400 text-white cursor-not-allowed"
+                : "bg-black"
+            }`}
+          >
+            {isLoading
+              ? courseId
+                ? "Modification..."
+                : "Création..."
+              : currentStep === steps.length - 1
+              ? "Finish"
+              : "Next"}
+
+            <HiChevronRight className="ml-2 h-4 w-4" />
+          </button>
+        </div>
       </div>
-
-      {currentStep === 0 && (
-        <CourseDetailsForm
-          courseData={courseData}
-          handleCourseDataChange={handleCourseDataChange}
-        />
-      )}
-      {currentStep === 1 && (
-        <CourseCurriculum
-          courseData={courseData}
-          setCourseData={setCourseData}
-        />
-      )}
-      {currentStep === 2 && (
-        <CourseResources
-          courseData={courseData}
-          setCourseData={setCourseData}
-        />
-      )}
-
-      {currentStep === 3 && (
-        <CoursePricing
-          courseData={courseData}
-          handleCourseDataChange={handleCourseDataChange}
-        />
-      )}
-      {currentStep === 4 && <CoursePreview courseData={courseData} />}
-
-      <div className="mt-8 flex justify-between">
-        <button
-          onClick={handlePrev}
-          disabled={currentStep === 0}
-          className={`flex items-center px-6 py-2 rounded-lg font-medium ${
-            currentStep === 0
-              ? "bg-gray-400 text-white cursor-not-allowed"
-              : "bg-black text-white hover:bg-gray-800"
-          }`}
-        >
-          <HiChevronLeft className="mr-2 h-4 w-4" />
-          Previous
-        </button>
-        <button
-          onClick={handleNext}
-          disabled={!isValid() || isLoading}
-          className={`flex items-center px-6 py-2 rounded-lg font-medium  bg-black text-white hover:bg-gray-800 ${
-            !isValid() || isLoading
-              ? "bg-gray-400 text-white cursor-not-allowed"
-              : "bg-black"
-          }`}
-        >
-          {isLoading
-            ? courseId
-              ? "Modification..."
-              : "Création..."
-            : currentStep === steps.length - 1
-            ? "Finish"
-            : "Next"}
-
-          <HiChevronRight className="ml-2 h-4 w-4" />
-        </button>
-      </div>
-    </div>
+    </CourseProvider>
   );
 }

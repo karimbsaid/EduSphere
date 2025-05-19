@@ -1,32 +1,21 @@
 /* eslint-disable react/prop-types */
-import React from "react";
+import React, { useContext } from "react";
 import Resource from "./Resource";
 import Button from "../../../ui/Button";
+import { CourseContext } from "../../../context/courseContext";
 
-export default function CourseResources({ courseData, setCourseData }) {
-  const { resources } = courseData;
+export default function CourseResources() {
+  const { state, dispatch } = useContext(CourseContext);
+  const { resources } = state;
 
   const handleAddResource = () => {
-    setCourseData((prev) => ({
-      ...prev,
-      resources: [
-        ...prev.resources,
-        { title: "", file: null, ...(prev.isEdit && { isNew: true }) },
-      ],
-    }));
+    dispatch({ type: "ADD_RESOURCE" });
   };
 
   return (
     <div>
       {resources.map((res, index) => {
-        return (
-          <Resource
-            resource={res}
-            key={index}
-            setCourseData={setCourseData}
-            resourceIndex={index}
-          />
-        ); // Added return here
+        return <Resource resource={res} key={index} resourceIndex={index} />; // Added return here
       })}
       <Button
         label="add new Resource"

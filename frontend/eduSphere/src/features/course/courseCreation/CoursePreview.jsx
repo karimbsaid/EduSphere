@@ -1,6 +1,5 @@
-/* eslint-disable react/prop-types */
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useContext, useState } from "react";
 import {
   FiImage,
   FiClock,
@@ -10,28 +9,16 @@ import {
   FiFileText,
   FiDollarSign,
 } from "react-icons/fi";
+import { CourseContext } from "../../../context/courseContext";
 
-export default function CoursePreview({ courseData }) {
+export default function CoursePreview() {
+  const { state } = useContext(CourseContext);
   const [openSection, setOpenSection] = useState(null);
 
-  // const totalHours = courseData.sections
-  //   .reduce(
-  //     (total, section) =>
-  //       total +
-  //       section.lectures.reduce((sectionTotal, content) => {
-  //         if (content.type === "video" && content.duration) {
-  //           const [minutes, seconds] = content.duration.split(":").map(Number);
-  //           return sectionTotal + minutes + seconds / 60;
-  //         }
-  //         return sectionTotal;
-  //       }, 0),
-  //     0
-  //   )
-  //   .toFixed(1);
   const totalHours = 50;
-  const coverImage = courseData.isEdit
-    ? courseData.coverImage
-    : URL.createObjectURL(courseData.coverImage);
+  const coverImage = state.isEdit
+    ? state.coverImage
+    : URL.createObjectURL(state.coverImage);
 
   return (
     <motion.div
@@ -43,9 +30,8 @@ export default function CoursePreview({ courseData }) {
       <h2 className="text-3xl font-bold text-gray-800 mb-8">Course Preview</h2>
 
       <div className="rounded-lg w-full border border-gray-200 bg-white shadow-lg">
-        {/* Cover Image Section */}
         <div className="relative h-64 w-full overflow-hidden rounded-t-lg">
-          {courseData.coverImage ? (
+          {state.coverImage ? (
             <img
               src={coverImage}
               alt="Course cover"
@@ -58,20 +44,18 @@ export default function CoursePreview({ courseData }) {
           )}
           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-6">
             <h3 className="text-3xl font-bold text-white">
-              {courseData.title || "Course Title"}
+              {state.title || "Course Title"}
             </h3>
           </div>
         </div>
 
-        {/* Course Details */}
         <div className="p-6 space-y-6">
-          {/* Metadata */}
           <div className="flex flex-wrap gap-4 items-center">
             <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
-              {courseData.category || "Category"}
+              {state.category || "Category"}
             </span>
             <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
-              {courseData.level || "Level"}
+              {state.level || "Level"}
             </span>
             <div className="flex items-center text-gray-600">
               <FiClock className="mr-2" />
@@ -79,18 +63,16 @@ export default function CoursePreview({ courseData }) {
             </div>
           </div>
 
-          {/* Description */}
           <p className="text-gray-600 leading-relaxed">
-            {courseData.description || "Course description..."}
+            {state.description || "Course description..."}
           </p>
 
-          {/* Learning Objectives */}
           <div>
             <h4 className="text-xl font-semibold mb-4 text-gray-800">
               What you&apos;ll learn
             </h4>
             <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {courseData.sections.slice(0, 4).map((section, index) => (
+              {state.sections.slice(0, 4).map((section, index) => (
                 <li key={index} className="flex items-start text-gray-700">
                   <FiCheckCircle className="mt-1 mr-2 text-green-600" />
                   <span>{section.title || `Section ${index + 1}`}</span>
@@ -99,9 +81,8 @@ export default function CoursePreview({ courseData }) {
             </ul>
           </div>
 
-          {/* Curriculum Accordion */}
           <div className="space-y-2">
-            {courseData.sections.map((section, sectionIndex) => (
+            {state.sections.map((section, sectionIndex) => (
               <div key={sectionIndex} className="border rounded-lg">
                 <button
                   onClick={() =>
@@ -153,12 +134,11 @@ export default function CoursePreview({ courseData }) {
           </div>
         </div>
 
-        {/* Pricing Footer */}
         <div className="border-t px-6 py-4 flex justify-between items-center">
           <div className="flex items-center">
             <FiDollarSign className="h-6 w-6 text-gray-700 mr-2" />
             <span className="text-2xl font-bold text-gray-900">
-              {courseData.price > 0 ? `${courseData.price}` : "gratuit"}
+              {state.price > 0 ? `${state.price}` : "gratuit"}
             </span>
           </div>
         </div>

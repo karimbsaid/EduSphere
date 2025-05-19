@@ -1,43 +1,17 @@
 /* eslint-disable react/prop-types */
 import { HiPlus } from "react-icons/hi2";
 import QuestionEditor from "./QuestionEditor";
+import { useContext } from "react";
+import { CourseContext } from "../../../context/courseContext";
 
-export default function QuizEditor({
-  questions,
-  sectionIndex,
-  contentIndex,
-  setCourseData,
-}) {
+export default function QuizEditor({ questions, sectionIndex, contentIndex }) {
+  const { dispatch } = useContext(CourseContext);
   const handleAddQuizQuestion = () => {
-    setCourseData((prev) => ({
-      ...prev,
-      sections: prev.sections.map((section, i) =>
-        i === sectionIndex
-          ? {
-              ...section,
-              lectures: section.lectures.map((content, j) =>
-                j === contentIndex
-                  ? {
-                      ...content,
-                      questions: [
-                        ...content.questions,
-                        {
-                          questionText: "",
-                          options: [
-                            { text: "", isCorrect: false },
-                            { text: "", isCorrect: false },
-                            { text: "", isCorrect: false },
-                            { text: "", isCorrect: false },
-                          ],
-                        },
-                      ],
-                    }
-                  : content
-              ),
-            }
-          : section
-      ),
-    }));
+    dispatch({
+      type: "ADD_QUIZ_QUESTION",
+      sectionIndex,
+      lectureIndex: contentIndex,
+    });
   };
 
   return (
@@ -49,7 +23,6 @@ export default function QuizEditor({
           questionIndex={questionIndex}
           sectionIndex={sectionIndex}
           contentIndex={contentIndex}
-          setCourseData={setCourseData}
         />
       ))}
       <button

@@ -1,32 +1,18 @@
 /* eslint-disable react/prop-types */
-import React from "react";
+import React, { useContext } from "react";
 import Input from "../../../ui/Input";
 import FileUploader from "../../../components/FileUploader";
 import { HiTrash } from "react-icons/hi2";
+import { CourseContext } from "../../../context/courseContext";
 
-export default function Resource({ resource, setCourseData, resourceIndex }) {
+export default function Resource({ resource, resourceIndex }) {
+  const { dispatch } = useContext(CourseContext);
   const handleEditResource = (field, value) => {
-    setCourseData((prev) => ({
-      ...prev,
-      resources: prev.resources.map((res, i) => {
-        if (i !== resourceIndex) return res;
-        return {
-          ...res,
-          [field]: value,
-          ...(prev.isEdit ? { updated: true } : {}),
-        };
-      }),
-    }));
+    dispatch({ type: "UPDATE_RESOURCE_FIELD", resourceIndex, field, value });
   };
 
   const handleDeleteResource = () => {
-    setCourseData((prev) => ({
-      ...prev,
-      resources: prev.resources.filter((res, i) => {
-        if (i !== resourceIndex) return true;
-        return prev.isEdit && !res.isNew ? { ...res, deleted: true } : false;
-      }),
-    }));
+    dispatch({ type: "DELETE_RESOURCE", resourceIndex });
   };
 
   const handleFileSelect = (file) => {
