@@ -24,6 +24,7 @@ import CoursePreviewPage from "./pages/CoursePreviewPage";
 import CourseDetailPage from "./pages/CourseDetail";
 import Dashboard from "./pages/Dashboard";
 import EnrolledStudentRoute from "./pages/EnrolledStudentRoute";
+import { CourseProvider } from "./context/courseContext";
 
 function App() {
   const LayoutSelector = ({ children }) => {
@@ -68,7 +69,14 @@ function App() {
               element={<AddReview />}
             />
             <Route element={<ProtectedRoute group={["Admin", "Instructor"]} />}>
-              <Route path="/my-courses/add" element={<CourseCreation />} />
+              <Route
+                path="/my-courses/add"
+                element={
+                  <CourseProvider>
+                    <CourseCreation />
+                  </CourseProvider>
+                }
+              />
               <Route
                 path="/course/:courseId/preview"
                 element={<CoursePreviewPage />}
@@ -80,7 +88,11 @@ function App() {
               />
               <Route
                 path="/my-courses/:courseId"
-                element={<CourseCreation />}
+                element={
+                  <CourseProvider>
+                    <CourseCreation />
+                  </CourseProvider>
+                }
               />
               <Route path="/dashboard/users" element={<Users />} />
               <Route path="/dashboard/courses" element={<CoursesDashboard />} />

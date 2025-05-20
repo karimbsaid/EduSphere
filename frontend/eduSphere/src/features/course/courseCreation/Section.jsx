@@ -1,58 +1,25 @@
 /* eslint-disable react/prop-types */
 import { HiOutlineTrash } from "react-icons/hi2";
 import ContentItem from "./ContentItem";
+import { CourseContext } from "../../../context/courseContext";
+import { useContext } from "react";
 
-export default function Section({ section, sectionIndex, setCourseData }) {
+export default function Section({ section, sectionIndex }) {
+  const { dispatch } = useContext(CourseContext);
   const handleSectionChange = (field, value) => {
-    setCourseData((prev) => ({
-      ...prev,
-      sections: prev.sections.map((section, i) =>
-        i === sectionIndex
-          ? {
-              ...section,
-              [field]: value,
-              ...(prev.isEdit && !section.isNew && { updated: true }),
-            }
-          : section
-      ),
-    }));
+    dispatch({
+      type: "UPDATE_SECTION_FIELD",
+      sectionIndex,
+      field,
+      value,
+    });
   };
 
   const handleAddContent = (type) => {
-    setCourseData((prev) => ({
-      ...prev,
-      sections: prev.sections.map((section, i) =>
-        i === sectionIndex
-          ? {
-              ...section,
-              lectures: [
-                ...section.lectures,
-                {
-                  type,
-                  title: "",
-                  ...(type === "video" && { file: null, duration: "" }),
-                  ...(type === "quiz" && { questions: [] }),
-                  ...(prev.isEdit && { isNew: true }), // Ajout de isNew uniquement si prev.isEdit est true
-                },
-              ],
-            }
-          : section
-      ),
-    }));
+    dispatch({ type: "ADD_LECTURE", sectionIndex, contentType: type });
   };
   const handleDeleteSection = () => {
-    setCourseData((prev) => ({
-      ...prev,
-      sections: prev.sections
-        .map((section, i) =>
-          i === sectionIndex
-            ? prev.isEdit && !section.isNew
-              ? { ...section, deleted: true }
-              : null
-            : section
-        )
-        .filter(Boolean),
-    }));
+    dispatch({ type: "DELETE_SECTION", sectionIndex });
   };
 
   return (
@@ -77,7 +44,6 @@ export default function Section({ section, sectionIndex, setCourseData }) {
             content={content}
             sectionIndex={sectionIndex}
             contentIndex={contentIndex}
-            setCourseData={setCourseData}
           />
         </div>
       ))}

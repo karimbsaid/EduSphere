@@ -2,55 +2,28 @@
 import { HiOutlineTrash } from "react-icons/hi2";
 import QuizEditor from "./QuizEditor";
 import VideoUpload from "./VideoUpload";
+import { useContext } from "react";
+import { CourseContext } from "../../../context/courseContext";
 
-export default function ContentItem({
-  content,
-  sectionIndex,
-  contentIndex,
-  setCourseData,
-}) {
+export default function ContentItem({ content, sectionIndex, contentIndex }) {
+  const { dispatch } = useContext(CourseContext);
+
   const handleContentChange = (field, value) => {
-    setCourseData((prev) => ({
-      ...prev,
-      sections: prev.sections.map((section, i) =>
-        i === sectionIndex
-          ? {
-              ...section,
-              lectures: section.lectures.map((content, j) =>
-                j === contentIndex
-                  ? {
-                      ...content,
-                      [field]: value,
-                      ...(prev.isEdit && !content.isNew && { updated: true }), // Ajout de updated: true si prev.isEdit est true
-                    }
-                  : content
-              ),
-            }
-          : section
-      ),
-    }));
+    dispatch({
+      type: "UPDATE_LECTURE_FIELD",
+      sectionIndex,
+      lectureIndex: contentIndex,
+      field,
+      value,
+    });
   };
 
   const handleDeleteContent = () => {
-    setCourseData((prev) => ({
-      ...prev,
-      sections: prev.sections.map((section, i) =>
-        i === sectionIndex
-          ? {
-              ...section,
-              lectures: section.lectures
-                .map((content, j) =>
-                  j === contentIndex
-                    ? prev.isEdit && !content.isNew
-                      ? { ...content, deleted: true } // Marquer comme supprimé si en mode édition et pas nouveau
-                      : null // Supprimer immédiatement sinon
-                    : content
-                )
-                .filter(Boolean), // Supprime les null (contenus réellement supprimés)
-            }
-          : section
-      ),
-    }));
+    dispatch({
+      type: "DELETE_LECTURE",
+      sectionIndex,
+      lectureIndex: contentIndex,
+    });
   };
 
   return (
@@ -98,7 +71,6 @@ export default function ContentItem({
           questions={content.questions}
           sectionIndex={sectionIndex}
           contentIndex={contentIndex}
-          setCourseData={setCourseData}
         />
       )}
       {content.type === "video" && (
@@ -106,7 +78,6 @@ export default function ContentItem({
           content={content}
           sectionIndex={sectionIndex}
           contentIndex={contentIndex}
-          setCourseData={setCourseData}
         />
       )}
     </div>

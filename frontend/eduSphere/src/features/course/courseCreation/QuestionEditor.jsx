@@ -1,72 +1,35 @@
+import { useContext } from "react";
+import { CourseContext } from "../../../context/courseContext";
+
 /* eslint-disable react/prop-types */
 export default function QuestionEditor({
   question,
   questionIndex,
   sectionIndex,
   contentIndex,
-  setCourseData,
 }) {
-  // Dans votre composant parent (ex: CourseForm.jsx)
+  const { dispatch } = useContext(CourseContext);
   const handleQuestionChange = (field, value) => {
-    setCourseData((prev) => ({
-      ...prev,
-      sections: prev.sections.map((section, sIdx) => {
-        if (sIdx !== sectionIndex) return section;
-
-        return {
-          ...section,
-          lectures: section.lectures.map((content, cIdx) => {
-            if (cIdx !== contentIndex) return content;
-
-            return {
-              ...content,
-              questions: content.questions.map((q, qIdx) => {
-                if (qIdx !== questionIndex) return q;
-
-                return {
-                  ...q,
-                  [field]: value,
-                };
-              }),
-              ...(prev.isEdit && { updated: true }), // Ajout de updated: true au niveau de lecture
-            };
-          }),
-        };
-      }),
-    }));
+    dispatch({
+      type: "UPDATE_QUIZ_QUESTION_FIELD",
+      sectionIndex,
+      lectureIndex: contentIndex,
+      questionIndex,
+      field,
+      value,
+    });
   };
 
   const handleOptionChange = (optionIndex, field, value) => {
-    setCourseData((prev) => ({
-      ...prev,
-      sections: prev.sections.map((section, sIdx) => {
-        if (sIdx !== sectionIndex) return section;
-
-        return {
-          ...section,
-          lectures: section.lectures.map((content, cIdx) => {
-            if (cIdx !== contentIndex) return content;
-
-            return {
-              ...content,
-              questions: content.questions.map((q, qIdx) => {
-                if (qIdx !== questionIndex) return q;
-
-                const newOptions = q.options.map((opt, oIdx) =>
-                  oIdx === optionIndex ? { ...opt, [field]: value } : opt
-                );
-
-                return {
-                  ...q,
-                  options: newOptions,
-                };
-              }),
-              ...(prev.isEdit && { updated: true }), // Ajout de updated: true au niveau de lecture
-            };
-          }),
-        };
-      }),
-    }));
+    dispatch({
+      type: "UPDATE_QUIZ_OPTION_FIELD",
+      sectionIndex,
+      lectureIndex: contentIndex,
+      questionIndex,
+      optionIndex,
+      field,
+      value,
+    });
   };
 
   return (

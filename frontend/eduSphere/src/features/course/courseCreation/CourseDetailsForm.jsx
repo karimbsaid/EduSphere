@@ -1,24 +1,30 @@
-/* eslint-disable react/prop-types */
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import TagInput from "../../../components/TagInput";
+import { useParams } from "react-router-dom";
+import { CourseContext } from "../../../context/courseContext";
 
-export default function CourseDetailsForm({
-  courseData,
-  handleCourseDataChange,
-}) {
+export default function CourseDetailsForm() {
+  const { courseId } = useParams();
+  const { state, dispatch } = useContext(CourseContext);
+  const handleCourseDataChange = (field, value) => {
+    dispatch({
+      type: "SET_FIELD",
+      field,
+      value,
+      courseId,
+    });
+  };
   const [coverPreview, setCoverPreview] = useState(null);
   useEffect(() => {
-    if (courseData.coverImage && !coverPreview) {
-      if (courseData.coverImage instanceof File) {
-        // Si c'est un fichier, créer une URL
-        setCoverPreview(URL.createObjectURL(courseData.coverImage));
-      } else if (typeof courseData.coverImage === "string") {
-        // Si c'est une URL (string), l'utiliser directement
-        setCoverPreview(courseData.coverImage);
+    if (state.coverImage && !coverPreview) {
+      if (state.coverImage instanceof File) {
+        setCoverPreview(URL.createObjectURL(state.coverImage));
+      } else if (typeof state.coverImage === "string") {
+        setCoverPreview(state.coverImage);
       }
     }
-  }, [courseData.coverImage, coverPreview]);
+  }, [state.coverImage, coverPreview]);
 
   const handleImageChange = (event) => {
     const file = event.target.files[0];
@@ -46,7 +52,7 @@ export default function CourseDetailsForm({
           <input
             id="title"
             type="text"
-            value={courseData.title}
+            value={state.title}
             onChange={(e) => handleCourseDataChange("title", e.target.value)}
             placeholder="Enter course title"
             className="mt-1 w-full rounded border-gray-300 p-2 shadow-sm focus:border-black focus:ring-black"
@@ -62,7 +68,7 @@ export default function CourseDetailsForm({
           </label>
           <textarea
             id="description"
-            value={courseData.description}
+            value={state.description}
             onChange={(e) =>
               handleCourseDataChange("description", e.target.value)
             }
@@ -81,7 +87,7 @@ export default function CourseDetailsForm({
           </label>
           <select
             id="category"
-            value={courseData.category}
+            value={state.category}
             onChange={(e) => handleCourseDataChange("category", e.target.value)}
             className="mt-1 w-full rounded border-gray-300 p-2 shadow-sm focus:border-black focus:ring-black"
           >
@@ -102,7 +108,7 @@ export default function CourseDetailsForm({
           </label>
           <select
             id="level"
-            value={courseData.level}
+            value={state.level}
             onChange={(e) => handleCourseDataChange("level", e.target.value)}
             className="mt-1 w-full rounded border-gray-300 p-2 shadow-sm focus:border-black focus:ring-black"
           >
@@ -114,7 +120,7 @@ export default function CourseDetailsForm({
         </div>
         <TagInput
           onChange={(tags) => handleCourseDataChange("tags", tags)}
-          initialTags={courseData.tags}
+          initialTags={state.tags}
         />
 
         <div>

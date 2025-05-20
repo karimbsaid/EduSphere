@@ -1,40 +1,22 @@
 /* eslint-disable react/prop-types */
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import Input from "../../../ui/Input";
 import FileUploader from "../../../components/FileUploader";
 import { HiPlus, HiTrash } from "react-icons/hi2";
 import { splitPdfFile } from "../../../services/apiSplitter";
 import Modal from "../../../ui/Modal";
 import Spinner from "../../../ui/Spinner";
+import { CourseContext } from "../../../context/courseContext";
 
-export default function Resource({ resource, setCourseData, resourceIndex }) {
+export default function Resource({ resource, resourceIndex }) {
+  const { dispatch } = useContext(CourseContext);
+
   const handleEditResource = (field, value) => {
-    setCourseData((prev) => ({
-      ...prev,
-      resources: prev.resources.map((res, i) => {
-        if (i !== resourceIndex) return res;
-        return {
-          ...res,
-          [field]: value,
-          ...(prev.isEdit && !res.isNew && { updated: true }),
-        };
-      }),
-    }));
+    dispatch({ type: "UPDATE_RESOURCE_FIELD", resourceIndex, field, value });
   };
 
   const handleDeleteResource = () => {
-    setCourseData((prev) => ({
-      ...prev,
-      resources: prev.resources
-        .map((res, i) =>
-          i === resourceIndex
-            ? prev.isEdit && !res.isNew
-              ? { ...res, deleted: true }
-              : null
-            : res
-        )
-        .filter(Boolean),
-    }));
+    dispatch({ type: "DELETE_RESOURCE", resourceIndex });
   };
 
   const handleFileSelect = (file) => {

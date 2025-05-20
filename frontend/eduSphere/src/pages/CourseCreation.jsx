@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { HiChevronRight, HiChevronLeft } from "react-icons/hi2";
 import CourseDetailsForm from "../features/course/courseCreation/CourseDetailsForm";
 import CourseCurriculum from "../features/course/courseCreation/CourseCurriculum";
@@ -23,6 +23,7 @@ import CourseResources from "../features/course/courseCreation/CourseResources";
 import { useAuth } from "../context/authContext";
 import { storeDocuments } from "../services/apiSplitter";
 import Spinner from "../ui/Spinner";
+import { CourseContext } from "../context/courseContext";
 const steps = [
   "Course Details",
   "Curriculum",
@@ -35,19 +36,8 @@ export default function CourseCreation() {
   const [currentStep, setCurrentStep] = useState(0);
   const [isLoading, setLoading] = useState(false);
 
-  const [courseData, setCourseData] = useState({
-    title: "",
-    description: "",
-    category: "",
-    level: "",
-    tags: [],
-    coverImage: null,
-    sections: [],
-    price: 0,
-    resources: [],
-    isEdit: false,
-    faq: [],
-  });
+  const { dispatch, state } = useContext(CourseContext);
+
   const { courseId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -57,16 +47,16 @@ export default function CourseCreation() {
     switch (currentStep) {
       case 0:
         return (
-          courseData.title.trim() !== "" &&
-          courseData.description.trim() !== "" &&
-          courseData.level != "" &&
-          courseData.tags.length > 0 &&
-          courseData.coverImage != null
+          state.title.trim() !== "" &&
+          state.description.trim() !== "" &&
+          state.level != "" &&
+          state.tags.length > 0 &&
+          state.coverImage != null
         );
       case 1:
         return (
-          courseData.sections.length > 0 &&
-          courseData.sections.every((section) => {
+          state.sections.length > 0 &&
+          state.sections.every((section) => {
             const hasValidTitle = section.title.trim() !== "";
             const hasLectures = section.lectures.length > 0;
 
@@ -102,14 +92,14 @@ export default function CourseCreation() {
         );
       case 2:
         return (
-          courseData.resources.every(
+          state.resources.every(
             (res) =>
               res?.title?.trim() != "" &&
               (res.file != null || res.resourceUrl != "")
           ) ?? false
         );
       case 3:
-        return courseData.price >= 0 && courseData.price != "";
+        return state.price >= 0 && state.price != "";
       default:
         return true;
     }
@@ -118,17 +108,20 @@ export default function CourseCreation() {
     const fetchCourseDetail = async () => {
       try {
         const { course } = await getCourseDetailEdit(courseId, token);
-        setCourseData({
-          title: course.title,
-          description: course.description,
-          coverImage: course.imageUrl,
-          level: course.level,
-          category: course.category,
-          sections: course.sections,
-          price: Number(course.price) || 0,
-          tags: course.tags,
-          isEdit: courseId ? true : false,
-          resources: course.resources || [],
+        dispatch({
+          type: "SET_ALL_FIELDS",
+          payload: {
+            title: course.title,
+            description: course.description,
+            coverImage: course.imageUrl,
+            level: course.level,
+            category: course.category,
+            sections: course.sections,
+            price: Number(course.price) || 0,
+            tags: course.tags,
+            isEdit: courseId ? true : false,
+            resources: course.resources || [],
+          },
         });
       } catch (error) {
         console.error(
@@ -140,7 +133,7 @@ export default function CourseCreation() {
     if (courseId) {
       fetchCourseDetail();
     }
-  }, [courseId, token]);
+  }, [courseId, dispatch, token]);
 
   const handlePrev = () => {
     if (currentStep > 0) {
@@ -173,20 +166,11 @@ export default function CourseCreation() {
     }
   };
 
-  const handleCourseDataChange = (field, value) => {
-    setCourseData((prev) => {
-      if (courseId) {
-        return { ...prev, [field]: value, updated: true };
-      }
-      return { ...prev, [field]: value };
-    });
-  };
-
   const handleCreateCourse = async () => {
     try {
-      const course = await createCourse(courseData, token);
+      const course = await createCourse(state, token);
 
-      for (const sec of courseData.sections) {
+      for (const sec of state.sections) {
         const sectionRes = await createSection(
           token,
           course.data._id,
@@ -202,8 +186,8 @@ export default function CourseCreation() {
           );
         }
       }
-      if (courseData.resources.length > 0) {
-        for (const res of courseData.resources) {
+      if (state.resources.length > 0) {
+        for (const res of state.resources) {
           const resourceLabel = `Création de resource ${res.title}`;
           const response = await addResource(
             course.data._id,
@@ -213,8 +197,8 @@ export default function CourseCreation() {
           );
         }
       }
-      if (courseData.faq.length > 0) {
-        const response = await storeDocuments(courseData.faq);
+      if (state.faq.length > 0) {
+        const response = await storeDocuments(state.faq);
       }
       toast.success("Cours créé avec succès !");
       navigate(`/course/${course.data._id}/preview`);
@@ -227,11 +211,11 @@ export default function CourseCreation() {
 
   const handleUpdateCourse = async () => {
     try {
-      if (courseData.updated) {
-        await updateCourse(token, courseId, courseData);
+      if (state.updated) {
+        await updateCourse(token, courseId, state);
       }
 
-      for (const sec of courseData.sections) {
+      for (const sec of state.sections) {
         if (sec.deleted) {
           await deleteSection(courseId, sec._id, token);
           continue;
@@ -269,7 +253,7 @@ export default function CourseCreation() {
           }
         }
       }
-      for (const res of courseData.resources) {
+      for (const res of state.resources) {
         if (res.isNew) {
           const resourceData = await addResource(courseId, res, token);
         }
@@ -277,8 +261,8 @@ export default function CourseCreation() {
           await updateResource(res._id, res, token);
         }
       }
-      if (courseData.faq) {
-        const response = await storeDocuments(courseData.faq);
+      if (state.faq) {
+        const response = await storeDocuments(state.faq);
       }
     } catch (error) {
       console.error("Erreur lors de la mise à jour :", error);
@@ -320,32 +304,12 @@ export default function CourseCreation() {
         ))}
       </div>
 
-      {currentStep === 0 && (
-        <CourseDetailsForm
-          courseData={courseData}
-          handleCourseDataChange={handleCourseDataChange}
-        />
-      )}
-      {currentStep === 1 && (
-        <CourseCurriculum
-          courseData={courseData}
-          setCourseData={setCourseData}
-        />
-      )}
-      {currentStep === 2 && (
-        <CourseResources
-          courseData={courseData}
-          setCourseData={setCourseData}
-        />
-      )}
+      {currentStep === 0 && <CourseDetailsForm />}
+      {currentStep === 1 && <CourseCurriculum />}
+      {currentStep === 2 && <CourseResources />}
 
-      {currentStep === 3 && (
-        <CoursePricing
-          courseData={courseData}
-          handleCourseDataChange={handleCourseDataChange}
-        />
-      )}
-      {currentStep === 4 && <CoursePreview courseData={courseData} />}
+      {currentStep === 3 && <CoursePricing />}
+      {currentStep === 4 && <CoursePreview courseData={state} />}
 
       <div className="mt-8 flex justify-between">
         <button

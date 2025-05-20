@@ -1,29 +1,50 @@
 /* eslint-disable react/prop-types */
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import Resource from "./Resource";
 import Button from "../../../ui/Button";
 import Modal from "../../../ui/Modal";
 import { HiPlus, HiTrash } from "react-icons/hi2";
 import { splitPdfFile } from "../../../services/apiSplitter";
 import Input from "../../../ui/Input";
+import { CourseContext } from "../../../context/courseContext";
 
-export default function CourseResources({ courseData, setCourseData }) {
-  const { resources } = courseData;
+export default function CourseResources() {
+  const { state, dispatch } = useContext(CourseContext);
+
+  const { resources } = state;
   const [isLoading, setIsLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const isThereFileToSplit = resources.some((res) => res.isSpliter === true);
+  const handleFaqChange = (index, field, value) => {
+    dispatch({
+      type: "UPDATE_FAQ_FIELD",
+      index,
+      field,
+      value,
+    });
+  };
+
+  const handleAddFAQ = () => {
+    dispatch({ type: "ADD_FAQ" });
+  };
+
+  const handleDeleteFaq = (index) => {
+    dispatch({ type: "DELETE_FAQ", index });
+  };
+
   const handleOpenModal = async () => {
     try {
       setIsLoading(true);
-
       let allFaqs = [];
+
       for (const res of resources) {
         if (res.isSpliter === true) {
           const extractedSections = await splitPdfFile(res);
           allFaqs = allFaqs.concat(extractedSections);
         }
       }
-      setCourseData((prev) => ({ ...prev, faq: allFaqs }));
+
+      dispatch({ type: "SET_FAQ", payload: allFaqs });
     } catch (error) {
       console.error("Error splitting PDF:", error);
     } finally {
@@ -32,55 +53,13 @@ export default function CourseResources({ courseData, setCourseData }) {
   };
 
   const handleAddResource = () => {
-    console.log("add resource");
-    setCourseData((prev) => ({
-      ...prev,
-      resources: [
-        ...prev.resources,
-        { title: "", file: null, ...(prev.isEdit && { isNew: true }) },
-      ],
-    }));
-  };
-
-  const handleFaqChange = (index, field, value) => {
-    setCourseData((prev) => ({
-      ...prev,
-      faq: prev.faq.map((faq, i) => {
-        if (i !== index) return faq;
-        return {
-          ...faq,
-          [field]: value,
-        };
-      }),
-    }));
-  };
-
-  const handleAddFAQ = () => {
-    setCourseData((prev) => ({
-      ...prev,
-      faq: [...prev.faq, { title: "", content: "" }],
-    }));
-  };
-
-  const handleDeleteFaq = (index) => {
-    setCourseData((prev) => ({
-      ...prev,
-      faq: prev.faq.filter((faq, i) => i !== index),
-    }));
+    dispatch({ type: "ADD_RESOURCE" });
   };
 
   return (
     <div>
       {resources.map((res, index) => {
-        return (
-          <Resource
-            courseData={courseData}
-            resource={res}
-            key={index}
-            setCourseData={setCourseData}
-            resourceIndex={index}
-          />
-        ); // Added return here
+        return <Resource resource={res} key={index} resourceIndex={index} />; // Added return here
       })}
       <Button
         label="add new Resource"

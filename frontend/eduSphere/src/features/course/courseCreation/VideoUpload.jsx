@@ -1,33 +1,19 @@
 /* eslint-disable react/prop-types */
 import { FiVideo, FiUploadCloud } from "react-icons/fi";
 import FileUploader from "../../../components/FileUploader";
+import { CourseContext } from "../../../context/courseContext";
+import { useContext } from "react";
 
-export default function VideoUpload({
-  sectionIndex,
-  contentIndex,
-  content,
-  setCourseData,
-}) {
+export default function VideoUpload({ sectionIndex, contentIndex, content }) {
+  const { dispatch } = useContext(CourseContext);
   const handleContentChange = (field, value) => {
-    setCourseData((prev) => ({
-      ...prev,
-      sections: prev.sections.map((section, i) =>
-        i === sectionIndex
-          ? {
-              ...section,
-              lectures: section.lectures.map((content, j) =>
-                j === contentIndex
-                  ? {
-                      ...content,
-                      [field]: value,
-                      ...(prev.isEdit && !content.isNew && { updated: true }),
-                    }
-                  : content
-              ),
-            }
-          : section
-      ),
-    }));
+    dispatch({
+      type: "UPDATE_LECTURE_FIELD",
+      sectionIndex,
+      lectureIndex: contentIndex,
+      field,
+      value,
+    });
   };
   const handleFileChange = (file) => {
     handleContentChange("file", file);
