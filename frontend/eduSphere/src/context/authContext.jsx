@@ -16,6 +16,7 @@ export const AuthProvider = ({ children }) => {
       if (token) {
         try {
           const { user } = await getMyprofile(token);
+          console.log(user);
           setUser({ ...user, token });
         } catch (error) {
           console.error("Failed to load user profile:", error);

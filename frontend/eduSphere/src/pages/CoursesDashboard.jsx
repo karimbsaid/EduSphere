@@ -9,41 +9,38 @@ import CourseRow from "../features/courseDashboard/CourseRow";
 import Pagination from "../components/Pagination";
 import Spinner from "../ui/Spinner";
 import { Modal } from "../ui/ModalOff";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+
+const fetchCourses = async ({ queryKey }) => {
+  const [_key, { page, limit, sort, search, status, token }] = queryKey;
+  const query = { page, limit, sort };
+  if (search) query.search = search;
+  if (status !== "tous") query.status = status;
+
+  return await getAllcourse(query, token);
+};
 
 export default function CoursesDashboard() {
   const { user } = useAuth();
   const token = user?.token;
-  const [isLoading, setIsLoading] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const currentPage = parseInt(searchParams.get("page") || 1, 10);
   const limit = parseInt(searchParams.get("limit") || 5, 10);
   const search = searchParams.get("search") || "";
   const sort = searchParams.get("sort") || "totalStudents";
   const status = searchParams.get("status") || "tous";
-  const [courses, setCourses] = useState([]);
-  const [totalCourses, setTotalCourses] = useState(0);
-  useEffect(() => {
-    const fetchCourse = async () => {
-      setIsLoading(true);
-      try {
-        const query = {
-          sort,
-          page: currentPage,
-          limit,
-        };
-        if (search.trim() != "") query.search = search;
-        if (status != "tous") query.status = status;
-        const courseData = await getAllcourse(query, token);
-        setTotalCourses(courseData.totalDocuments);
-        setCourses(courseData.courses);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchCourse();
-  }, [currentPage, limit, token, searchParams, search, sort, status]);
+  const queryClient = useQueryClient();
+
+  const { data, isLoading, isError } = useQuery({
+    queryKey: [
+      "courses",
+      { page: currentPage, limit, sort, search, status, token },
+    ],
+    queryFn: fetchCourses,
+    keepPreviousData: true,
+  });
+  const courses = data?.courses || [];
+  const totalCourses = data?.totalDocuments || 0;
   const totalPages = Math.ceil(totalCourses / limit);
 
   const handleChangePage = (page) => {

@@ -33,26 +33,22 @@ const permissions = [
   // Admin permissions
   { role: "Admin", feature: "manage_users", authorized: true },
   { role: "Admin", feature: "approve_reject_courses", authorized: true },
-  { role: "Admin", feature: "delete_courses", authorized: true }, // Admin peut supprimer un cours en rejected
   { role: "Admin", feature: "view_analytics", authorized: true },
   { role: "Admin", feature: "manage_payments", authorized: true },
-  { role: "Admin", feature: "view_students", authorized: true },
-  { role: "Admin", feature: "view_courses", authorized: true }, // Admin peut voir les cours
-  { role: "Admin", feature: "manage_courses", authorized: true }, // Admin peut voir les cours
+  { role: "Admin", feature: "manage_courses", authorized: true },
 
   // Instructor permissions
-  { role: "Instructor", feature: "add_courses", authorized: true }, // Instructeur peut ajouter un cours
-  { role: "Instructor", feature: "edit_courses", authorized: true }, // Instructeur peut modifier un cours (en draft ou rejected)
-  { role: "Instructor", feature: "delete_courses", authorized: true }, // Instructeur peut supprimer un cours (si pas d’étudiants inscrits)
+  { role: "Instructor", feature: "add_courses", authorized: true },
+  { role: "Instructor", feature: "edit_courses", authorized: true },
+  { role: "Instructor", feature: "delete_courses", authorized: true },
   { role: "Instructor", feature: "view_students", authorized: true },
   { role: "Instructor", feature: "view_analytics", authorized: true },
-  { role: "Instructor", feature: "view_courses", authorized: true }, // Instructeur peut voir les cours
-  { role: "Instructor", feature: "manage_courses", authorized: true }, // Instructeur peut voir les cours
+  { role: "Instructor", feature: "manage_courses", authorized: true },
 
   // Student permissions
   { role: "Student", feature: "view_courses", authorized: true },
   { role: "Student", feature: "enroll_courses", authorized: true },
-  { role: "Student", feature: "add_review", authorized: true }, // Étudiant peut ajouter une review
+  { role: "Student", feature: "add_review", authorized: true },
 ];
 
 async function seed() {

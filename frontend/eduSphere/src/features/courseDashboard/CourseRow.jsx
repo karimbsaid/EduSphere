@@ -14,6 +14,8 @@ import {
   createCourseUpdate,
   approuveRejetCour,
 } from "../../services/apiCourse";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+
 import { toast } from "react-hot-toast";
 
 export default function CourseRow({ course }) {
@@ -21,6 +23,37 @@ export default function CourseRow({ course }) {
   const { token } = user;
   const { close } = useContext(ModalContext);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const deleteMutation = useMutation({
+    mutationFn: (courseId) => deleteCourse(courseId, token),
+    onSuccess: () => {
+      toast.success("Cours supprimé avec succès !");
+      queryClient.invalidateQueries({ queryKey: ["courses"] });
+    },
+    onError: (error) => {
+      toast.error(error.message || "Erreur lors de la suppression.");
+    },
+  });
+
+  const approveMutation = useMutation({
+    mutationFn: () =>
+      approuveRejetCour(course._id, "published", "Félicitation !", token),
+    onSuccess: () => {
+      toast.success("Cours approuvé !");
+      queryClient.invalidateQueries({ queryKey: ["courses"] });
+    },
+    onError: () => toast.error("Échec de l’approbation."),
+  });
+
+  const rejectMutation = useMutation({
+    mutationFn: (reason) =>
+      approuveRejetCour(course._id, "rejected", reason, token),
+    onSuccess: () => {
+      toast.success("Cours rejeté !");
+      queryClient.invalidateQueries({ queryKey: ["courses"] });
+    },
+    onError: () => toast.error("Échec du rejet."),
+  });
 
   // Vérification des données pour éviter les erreurs
   if (!course || !user) {
@@ -86,48 +119,16 @@ export default function CourseRow({ course }) {
     }
   };
 
-  const handleDelete = async () => {
-    try {
-      console.log(`Supprimer le cours ${course._id}`);
-      await deleteCourse(course._id, token);
-      toast.success("Cours supprimé avec succès !");
-    } catch (error) {
-      console.error(error);
-      toast.error(error.message || "Impossible de supprimer le cours.");
-    }
+  const handleDelete = () => {
+    deleteMutation.mutate(course._id);
   };
 
-  const handleApprove = async () => {
-    console.log(`Approuver le cours ${course._id}`);
-    const { status } = await approuveRejetCour(
-      course._id,
-      "published",
-      "félication votre cour est en public",
-      token
-    );
-    if (status === "success") {
-      toast.success("Cours approuvé avec succès !");
-    } else {
-      toast.success("Cours approuvé fail !");
-    }
-
-    // Logique pour approuver (déjà gérée côté backend)
+  const handleApprove = () => {
+    approveMutation.mutate();
   };
 
-  const handleReject = async (id, reason) => {
-    console.log(`Rejeter le cours ${id} avec motif : ${reason}`);
-    const { status } = await approuveRejetCour(
-      course._id,
-      "rejected",
-      reason,
-      token
-    );
-    if (status === "success") {
-      toast.success("Cours rejecté avec succès !");
-    } else {
-      toast.success("Cours rejecté fail !");
-    }
-    // Logique pour rejeter (déjà gérée côté backend)
+  const handleReject = (id, reason) => {
+    rejectMutation.mutate(reason);
   };
 
   const handleSubmitForApproval = async () => {
@@ -157,6 +158,7 @@ export default function CourseRow({ course }) {
     isAdmin &&
     hasPermission("approve_reject_courses") &&
     course.status === "pending";
+
   const canEdit =
     isCourseOwner &&
     hasPermission("edit_courses") &&

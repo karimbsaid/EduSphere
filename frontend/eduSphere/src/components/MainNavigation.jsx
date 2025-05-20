@@ -25,7 +25,7 @@ export default function MainNavigation() {
 
   // Map navigation items to required permissions
   const navItems = [
-    { icon: HiHome, label: "Accueil", path: "/", permission: null },
+    { icon: HiHome, label: "Accueil", path: "/", permission: "enroll_courses" },
     {
       icon: HiChartPie,
       label: "Dashboard",
@@ -52,23 +52,19 @@ export default function MainNavigation() {
           path: "/dashboard/payments",
           permission: "manage_payments",
         },
-        // {
-        //   label: "Mes Cours",
-        //   path: "/dashboard/mycourses",
-        //   permission: "manage_courses",
-        // },
-        // {
-        //   label: "Mes étudiants",
-        //   path: "/my-courses/my-students",
-        //   permission: "view_students",
-        // },
+
+        {
+          label: "Mes étudiants",
+          path: "/my-courses/my-students",
+          permission: "view_students",
+        },
       ],
     },
     {
       icon: HiMiniAcademicCap,
       label: "Mes cours inscrits",
       path: "/my-enrolled-courses",
-      permission: null,
+      permission: "enroll_courses",
     },
     {
       icon: HiBookOpen,
@@ -80,6 +76,7 @@ export default function MainNavigation() {
 
   // Check if user has a specific permission
   const hasPermission = (permission) => {
+    console.log("user role", user);
     if (!permission) return true;
     return (
       user?.role?.permissions?.some(
