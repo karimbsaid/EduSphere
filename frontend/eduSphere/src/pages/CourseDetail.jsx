@@ -10,6 +10,7 @@ import { getCourseReviews } from "../services/apiReview";
 import ReviewCard from "../features/course/courseDetail/ReviewCard";
 import { pay } from "../services/apiPayment";
 import Spinner from "../ui/Spinner"; // 👉 Assure-toi que ce chemin est correct
+import Card from "../ui/Card";
 
 export default function CourseDetailPage() {
   const { courseId } = useParams();
@@ -48,6 +49,7 @@ export default function CourseDetailPage() {
         // Si l'utilisateur est inscrit, récupère sa progression
         if (token && !isUserInstructor) {
           const progressResponse = await getProgress(courseId, token);
+          console.log(progressResponse);
           if (progressResponse.status === "success") {
             setIsEnrolled(true);
             course.progress = progressResponse.progress;
@@ -130,15 +132,17 @@ export default function CourseDetailPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 px-4 container mx-auto">
         <div className="md:col-span-2 space-y-6 w-full">
           <CourseCard course={courseDetail} />
-          {courseDetail.sections?.map((section) => (
-            <CourseSection
-              key={section._id}
-              section={section}
-              isOpen={openSection === section._id}
-              onToggle={() => toggleSection(section._id)}
-              onLectureClick={() => console.log("ok")}
-            />
-          ))}
+          <Card className="border-none w-full">
+            {courseDetail.sections?.map((section) => (
+              <CourseSection
+                key={section._id}
+                section={section}
+                isOpen={openSection === section._id}
+                onToggle={() => toggleSection(section._id)}
+                onLectureClick={() => console.log("ok")}
+              />
+            ))}
+          </Card>
         </div>
         <div className="md:col-span-2">
           <CourseIncludes

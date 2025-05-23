@@ -8,7 +8,6 @@ const interactionWeights = {
 };
 
 const createInteraction = async (userId, type, feature) => {
-  console.log("creation", userId, type, feature);
   const weight = interactionWeights[type] || 1;
 
   //   // Supprimer interactions plus vieilles que 30 min

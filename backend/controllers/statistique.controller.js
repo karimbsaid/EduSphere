@@ -477,7 +477,6 @@ exports.getTotalRevenue = catchAsync(async (req, res, next) => {
   const courses = await Course.find(courseFilter).select(
     "title revenu price totalStudent"
   );
-  console.log(courses);
   const totalRevenue = courses.reduce((sum, course) => sum + course.revenu, 0);
   const courseIds = courses.map((course) => course._id);
   const today = new Date();

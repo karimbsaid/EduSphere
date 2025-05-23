@@ -1,7 +1,8 @@
 class APIFeatures {
-  constructor(query, queryString) {
+  constructor(query, queryString, model = null) {
     this.query = query;
     this.queryString = queryString;
+    this.model = model; // <-- nécessaire pour détecter les types
   }
 
   filter() {
@@ -17,20 +18,48 @@ class APIFeatures {
     return this;
   }
 
-  search() {
+  // search() {
+  //   if (this.queryString.search) {
+  //     const searchRegex = new RegExp(this.queryString.search, "i");
+
+  //     const searchQuery = {
+  //       $or: [
+  //         { title: searchRegex },
+  //         { description: searchRegex },
+  //         { category: searchRegex },
+  //         { tags: { $in: [this.queryString.search] } }, // Recherche dans les tags (tableau)
+  //       ],
+  //     };
+
+  //     this.query = this.query.find(searchQuery);
+  //   }
+
+  //   return this;
+  // }
+
+  search(searchableFields = []) {
     if (this.queryString.search) {
-      const searchRegex = new RegExp(this.queryString.search, "i");
+      const regex = new RegExp(this.queryString.search, "i");
 
-      const searchQuery = {
-        $or: [
-          { title: searchRegex },
-          { description: searchRegex },
-          { category: searchRegex },
-          { tags: { $in: [this.queryString.search] } }, // Recherche dans les tags (tableau)
-        ],
-      };
+      const orConditions = searchableFields.map((field) => {
+        let isArrayField = false;
 
-      this.query = this.query.find(searchQuery);
+        // Vérifie dynamiquement si le champ est un tableau dans le modèle
+        if (this.model) {
+          const fieldType = this.model.schema.path(field)?.instance;
+          isArrayField = fieldType === "Array";
+        }
+
+        if (isArrayField) {
+          return { [field]: { $in: [regex] } };
+        } else {
+          return { [field]: { $regex: regex } };
+        }
+      });
+
+      this.query = this.query.find({
+        $and: [{ $or: orConditions }],
+      });
     }
 
     return this;

@@ -5,14 +5,12 @@ const paimentRouter = require("./routes/paiment.routes");
 const enrollRouter = require("./routes/enrollment.routes");
 const profileRouter = require("./routes/user.routes");
 const statistiquesRouter = require("./routes/statistiques.routes");
-// const userRouter = require("./routes/userRoutes");
 const authRouter = require("./routes/auth.routes");
 const globalErrorController = require("./controllers/error.controller");
 const app = express();
 const fileUpload = require("express-fileupload");
 const cors = require("cors");
-const path = require("path");
-
+// mongoose.set("debug", true);
 app.use(express.json({ limit: "500mb" }));
 app.use(express.urlencoded({ limit: "500mb", extended: true }));
 app.use(cors());

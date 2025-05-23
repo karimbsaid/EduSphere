@@ -48,15 +48,18 @@ export const createCourseUpdate = async (courseId, token) => {
 };
 
 export const submitCourseForApproval = async (courseId, token) => {
+  console.log(courseId);
   const response = await fetch(`${API_URL}courses/${courseId}/submit`, {
     method: "PATCH",
     headers: {
       Authorization: `Bearer ${token}`,
     },
   });
+  const data = await response.json();
+  console.log(data);
 
   if (!response.ok) throw new Error("Erreur lors de la submit du cours");
-  return response.json();
+  return data;
 };
 
 export const createSection = async (token, courseId, sectionTitle) => {
@@ -81,12 +84,14 @@ export const uploadLecture = async (
   const formData = new FormData();
   formData.append("title", lectureData.title);
   formData.append("type", lectureData.type);
+  console.log(lectureData);
 
   const duration = Number(lectureData.duration ? lectureData.duration : 0);
 
   formData.append("duration", duration);
 
   if (lectureData.type === "video") {
+    console.log("ok");
     if (!lectureData.file) {
       throw new Error("Un fichier vidéo est requis pour une lecture vidéo");
     }
@@ -161,6 +166,29 @@ export const getCourseDetail = async (courseId) => {
     throw new Error("Erreur réseau : " + error.message);
   }
 };
+
+export const getCourseProgramme = async (courseId, token) => {
+  const response = await fetch(`${API_URL}courses/${courseId}/programme`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const data = await response.json();
+
+  if (response.status === 404) {
+    return data;
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      data.message || "Erreur lors de la récupération du cours programme"
+    );
+  }
+
+  return data;
+};
 export const getStats = async () => {
   const response = await fetch(`${API_URL}courses/stats`, {
     method: "GET",
@@ -170,6 +198,7 @@ export const getStats = async () => {
 };
 
 export const getCourseDetailEdit = async (courseId, token) => {
+  console.log("gettt");
   try {
     const response = await fetch(`${API_URL}courses/${courseId}/edit`, {
       method: "GET",
@@ -356,11 +385,15 @@ export const deleteSection = async (courseId, sectionId, token) => {
   return data;
 };
 
-export const getLecture = async (courseId, sectionId, lectureId) => {
+export const getLecture = async (courseId, sectionId, lectureId, token) => {
+  console.log(courseId, sectionId, lectureId, token);
   const response = await fetch(
     `${API_URL}courses/${courseId}/sections/${sectionId}/lectures/${lectureId}`,
     {
       method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     }
   );
 
@@ -368,9 +401,12 @@ export const getLecture = async (courseId, sectionId, lectureId) => {
   return response.json();
 };
 export const getPopulaireCourses = async () => {
-  const response = await fetch(`${API_URL}courses/top-five`, {
-    method: "GET",
-  });
+  const response = await fetch(
+    `${API_URL}courses/top-five?fields=title,instructor,totalStudents,averageRating,imageUrl,level,price`,
+    {
+      method: "GET",
+    }
+  );
 
   if (!response.ok) throw new Error("Erreur lors de la récupération des cours");
   return response.json();
@@ -382,10 +418,30 @@ export const getAllcourse = async (query = {}, token) => {
   if (token != null) {
     headers.Authorization = `Bearer ${token}`;
   }
-  const response = await fetch(`${API_URL}courses?${queryString}`, {
-    method: "GET",
-    headers,
-  });
+  const response = await fetch(
+    `${API_URL}courses?${queryString}&status=published&fields=title,status,price,category,instructor,averageRating,ratingsQuantity,totalStudents,imageUrl`,
+    {
+      method: "GET",
+      headers,
+    }
+  );
+
+  if (!response.ok) throw new Error("Erreur lors de la récupération des cours");
+  return response.json();
+};
+
+export const getManagedCours = async (query = {}, token) => {
+  const queryString = new URLSearchParams(query).toString();
+
+  const response = await fetch(
+    `${API_URL}courses/managed-course?${queryString}&fields=title,status,price,category,instructor,totalStudents`,
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
 
   if (!response.ok) throw new Error("Erreur lors de la récupération des cours");
   return response.json();
@@ -447,14 +503,18 @@ export const updateResource = async (resourceId, resourceData, token) => {
     },
     body: formData,
   });
+  console.log(response);
 
   if (!response.ok) throw new Error("Erreur lors de la création du resource");
   return response.json();
 };
 
-export const getResources = async (courseId) => {
+export const getResources = async (courseId, token) => {
   const response = await fetch(`${API_URL}courses/${courseId}/resources`, {
     method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
   });
 
   if (!response.ok) throw new Error("Erreur lors de la fetch du cours");
@@ -462,6 +522,7 @@ export const getResources = async (courseId) => {
 };
 
 export const approuveRejetCour = async (courseId, status, message, token) => {
+  console.log(courseId);
   const response = await fetch(`${API_URL}courses/${courseId}/approuverejet`, {
     method: "PATCH",
     headers: {

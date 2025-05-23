@@ -2,7 +2,11 @@
 import { useEffect, useState } from "react";
 
 import { useAuth } from "../context/authContext";
-import { getCourseDetail, getResources } from "../services/apiCourse";
+import {
+  getCourseDetail,
+  getCourseProgramme,
+  getResources,
+} from "../services/apiCourse";
 import CourseTabs from "./CourseTabs";
 import MainNavigation from "./MainNavigation";
 import { getProgress } from "../services/apiEnrollment";
@@ -37,13 +41,13 @@ export default function SideBar({ courseId, sectionId, onClose }) {
           if (courseId && sectionId) {
             const [courseData, resourcesData, progressData] = await Promise.all(
               [
-                getCourseDetail(courseId),
-                getResources(courseId),
+                getCourseProgramme(courseId, token),
+                getResources(courseId, token),
                 getProgress(courseId, token),
               ]
             );
             setCourse({
-              courseDetail: courseData.course,
+              courseDetail: courseData.data,
               resources: resourcesData.resources,
               progress: progressData.progress,
             });

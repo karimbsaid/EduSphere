@@ -107,7 +107,8 @@ export default function CourseCreation() {
   useEffect(() => {
     const fetchCourseDetail = async () => {
       try {
-        const { course } = await getCourseDetailEdit(courseId, token);
+        const { data: course } = await getCourseDetailEdit(courseId, token);
+
         dispatch({
           type: "SET_ALL_FIELDS",
           payload: {
@@ -242,10 +243,7 @@ export default function CourseCreation() {
           }
 
           if (lec.isNew) {
-            await uploadLecture(token, courseId, sectionId, {
-              ...lec,
-              file: lec.file,
-            });
+            await uploadLecture(token, courseId, sectionId, lec);
           }
 
           if (lec.updated) {
@@ -254,6 +252,7 @@ export default function CourseCreation() {
         }
       }
       for (const res of state.resources) {
+        console.log(res);
         if (res.isNew) {
           const resourceData = await addResource(courseId, res, token);
         }

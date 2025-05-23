@@ -1,5 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
-import { getAllcourse } from "../services/apiCourse";
+import { getManagedCours } from "../services/apiCourse";
 import { useAuth } from "../context/authContext";
 import { useSearchParams } from "react-router-dom";
 import CourseTableOperation from "../features/courseDashboard/CourseTableOperation";
@@ -7,17 +6,18 @@ import Card from "../ui/Card";
 import Table from "../ui/TableOff";
 import CourseRow from "../features/courseDashboard/CourseRow";
 import Pagination from "../components/Pagination";
-import Spinner from "../ui/Spinner";
 import { Modal } from "../ui/ModalOff";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import Loading from "../components/Loading";
+import { useEffect } from "react";
 
 const fetchCourses = async ({ queryKey }) => {
   const [_key, { page, limit, sort, search, status, token }] = queryKey;
   const query = { page, limit, sort };
   if (search) query.search = search;
   if (status !== "tous") query.status = status;
-
-  return await getAllcourse(query, token);
+  const course = await getManagedCours(query, token);
+  return course;
 };
 
 export default function CoursesDashboard() {
@@ -25,11 +25,13 @@ export default function CoursesDashboard() {
   const token = user?.token;
   const [searchParams, setSearchParams] = useSearchParams();
   const currentPage = parseInt(searchParams.get("page") || 1, 10);
-  const limit = parseInt(searchParams.get("limit") || 5, 10);
-  const search = searchParams.get("search") || "";
+  const limit = parseInt(searchParams.get("limit") || 3, 10);
+  const search = searchParams.get("search");
   const sort = searchParams.get("sort") || "totalStudents";
   const status = searchParams.get("status") || "tous";
-  const queryClient = useQueryClient();
+  useEffect(() => {
+    setSearchParams({});
+  }, []);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: [
@@ -39,21 +41,19 @@ export default function CoursesDashboard() {
     queryFn: fetchCourses,
     keepPreviousData: true,
   });
-  const courses = data?.courses || [];
-  const totalCourses = data?.totalDocuments || 0;
+  const courses = data?.data?.data || [];
+  const totalCourses = data?.total || 0;
   const totalPages = Math.ceil(totalCourses / limit);
 
   const handleChangePage = (page) => {
-    setSearchParams({ page, limit });
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set("page", page);
+    newParams.set("limit", limit);
+    setSearchParams(newParams);
   };
 
   if (isLoading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen bg-gray-100">
-        <Spinner size="lg" />
-        <div className="ml-4 text-lg">Chargement...</div>
-      </div>
-    );
+    return <Loading />;
   }
 
   return (

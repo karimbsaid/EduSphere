@@ -3,6 +3,7 @@ import { HiPlus } from "react-icons/hi2";
 import QuestionEditor from "./QuestionEditor";
 import { useContext } from "react";
 import { CourseContext } from "../../../context/courseContext";
+import Button from "../../../ui/Button";
 
 export default function QuizEditor({ questions, sectionIndex, contentIndex }) {
   const { dispatch } = useContext(CourseContext);
@@ -25,14 +26,15 @@ export default function QuizEditor({ questions, sectionIndex, contentIndex }) {
           contentIndex={contentIndex}
         />
       ))}
-      <button
-        className="flex flex-row items-center bg-blue-200 p-2 border-black-200"
+      <Button
         size="sm"
+        variant="simple"
+        outline
         onClick={handleAddQuizQuestion}
       >
         <HiPlus className="mr-2 h-4 w-4" />
         Add Question
-      </button>
+      </Button>
     </div>
   );
 }

@@ -1,10 +1,10 @@
 const Course = require("../models/course.models");
 const Resource = require("../models/resource.models");
 const catchAsync = require("../utils/catchAsync");
-const {
-  uploadToCloudinary,
-  deleteResourceFromCloudinary,
-} = require("../utils/cloudinaryService");
+const CloudinaryStorage = require("../services/cloudinaryStorage");
+const cloudinary = require("../config/cloudinary");
+const storage = new CloudinaryStorage(cloudinary);
+
 const slugify = require("slugify");
 
 exports.addResource = catchAsync(async (req, res, next) => {
@@ -15,16 +15,11 @@ exports.addResource = catchAsync(async (req, res, next) => {
   let resourceUrl = "";
 
   if (req.files && req.files.resourceFile) {
-    const result = await uploadToCloudinary(req.files.resourceFile, folder);
+    const result = await storage.upload(req.files.resourceFile, folder);
     resourceUrl = result.secure_url;
   }
-
   const resource = await Resource.create({ title, resourceUrl });
   await resource.save();
-
-  // await Course.findByIdAndUpdate(courseId, {
-  //   $push: { resources: resource._id },
-  // });
   await Course.findByIdAndUpdate(
     courseId,
     {
@@ -42,14 +37,19 @@ exports.updateResource = catchAsync(async (req, res, next) => {
   const resource = await Resource.findById(resourceId);
   let resourceUrl = "";
   if (req.files && req.files.resourceFile) {
-    const decodedImageUrl = decodeURIComponent(resource.resourceUrl);
-    const parts = decodedImageUrl.split("/upload/")[1].split("/");
-    const relevantParts = parts.slice(1).join("/");
-    const publicId = relevantParts.split(".").slice(0, -1).join(".");
+    // const decodedImageUrl = decodeURIComponent(resource.resourceUrl);
+    // const parts = decodedImageUrl.split("/upload/")[1].split("/");
+    // const relevantParts = parts.slice(1).join("/");
+    // const publicId = relevantParts.split(".").slice(0, -1).join(".");
     const folder = `courses/resources`;
 
-    const res = await deleteResourceFromCloudinary(publicId);
-    const file = await uploadToCloudinary(req.files.resourceFile, folder);
+    // const res = await deleteResourceFromCloudinary(publicId);
+    // const file = await uploadToCloudinary(req.files.resourceFile, folder);
+    const file = await storage.updateFile({
+      file: req.files.resourceFile,
+      existingUrl: resource.resourceUrl,
+      assetFolder: folder,
+    });
     resourceUrl = file.secure_url;
   }
 

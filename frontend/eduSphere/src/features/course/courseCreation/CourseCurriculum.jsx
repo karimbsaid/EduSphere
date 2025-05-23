@@ -2,6 +2,8 @@
 import { useContext } from "react";
 import Section from "./Section";
 import { CourseContext } from "../../../context/courseContext";
+import Button from "../../../ui/Button";
+import { HiPlus } from "react-icons/hi2";
 
 export default function CourseCurriculum() {
   const { state, dispatch } = useContext(CourseContext);
@@ -22,12 +24,10 @@ export default function CourseCurriculum() {
             <Section section={section} sectionIndex={sectionIndex} />
           </div>
         ))}
-        <button
-          onClick={handleAddSection}
-          className="p-2 bg-blue-500 text-white rounded"
-        >
-          ➕ Ajouter une section
-        </button>
+        <Button onClick={handleAddSection} variant="simple">
+          <HiPlus />
+          <span>Ajouter un chapitre</span>
+        </Button>
       </div>
     </div>
   );

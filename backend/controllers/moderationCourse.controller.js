@@ -5,6 +5,7 @@ const Lecture = require("../models/lecture.models");
 const Section = require("../models/section.models");
 const Resource = require("../models/resource.models");
 const catchAsync = require("../utils/catchAsync");
+const AppError = require("../utils/appError");
 
 const {
   getPublicId,
@@ -264,18 +265,8 @@ exports.accepteRejetCours = catchAsync(async (req, res, next) => {
 });
 
 exports.submitCourseForApproval = catchAsync(async (req, res, next) => {
-  const { courseId } = req.params;
-  const user = req.user;
+  const course = req.course;
 
-  const course = await Course.findById(courseId);
-  if (!course) {
-    return next(new AppError("Cours non trouvé", 404));
-  }
-  if (course.instructor.toString() !== user._id.toString()) {
-    return next(
-      new AppError("Vous n’êtes pas autorisé à soumettre ce cours", 403)
-    );
-  }
   if (course.status !== "draft") {
     return next(new AppError("Ce cours ne peut pas être soumis", 400));
   }

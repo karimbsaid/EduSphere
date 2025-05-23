@@ -14,7 +14,22 @@ const uploadToCloudinary = async (file, folder) => {
 };
 // Get user details
 exports.getMe = catchAsync(async (req, res, next) => {
-  const user = await User.findById(req.user.id);
+  const user = await User.findById(req.user.id)
+    .populate({
+      path: "additionalDetails",
+    })
+    .populate({
+      path: "role",
+      select: "name",
+      populate: {
+        path: "permissions",
+        select: "feature authorized",
+        populate: {
+          path: "feature",
+          select: "name",
+        },
+      },
+    });
   if (!user) {
     return next(new AppError("Utilisateur non trouvé", 404));
   }
@@ -27,7 +42,6 @@ exports.getMe = catchAsync(async (req, res, next) => {
 
 // Update user details
 exports.updateProfile = catchAsync(async (req, res, next) => {
-  console.log(req.body);
   const user = await User.findById(req.user._id).populate("additionalDetails");
   if (!user) {
     return next(new AppError("Utilisateur non trouvé", 404));
@@ -67,7 +81,6 @@ exports.getMyCourses = catchAsync(async (req, res, next) => {
     //   select: "title lectures", // Sélectionne les champs nécessaires de section
     // },
   });
-  console.log(user);
 
   if (!user) {
     return next(new AppError("Utilisateur non trouvé", 404));

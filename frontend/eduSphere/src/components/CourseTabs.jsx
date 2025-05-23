@@ -5,6 +5,7 @@ import CourseProgramme from "./CourseProgramme";
 import CourseResource from "./CourseResource";
 
 export default function CourseTabs({ data }) {
+  console.log(data);
   return (
     <div className="mb-8">
       <Tabs defaultValue="programme" className="w-full">
@@ -28,7 +29,10 @@ export default function CourseTabs({ data }) {
         </TabsList>
 
         <TabsContent value="programme">
-          <CourseProgramme course={data.courseDetail} />
+          <CourseProgramme
+            course={data.courseDetail}
+            progress={data.progress}
+          />
         </TabsContent>
 
         <TabsContent value="resources">

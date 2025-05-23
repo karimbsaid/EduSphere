@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/authContext";
 import { ACCOUNT_TYPE } from "../utils/constant";
+import Button from "../ui/ButtonVF";
 
 const Signup = () => {
   const [error, setError] = useState("");

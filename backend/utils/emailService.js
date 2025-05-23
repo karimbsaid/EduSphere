@@ -1,11 +1,13 @@
 const nodemailer = require("nodemailer");
 const { passwordResetTemplate } = require("../template/mail/resetToken");
-module.exports = class Email {
+
+class Email {
   constructor(user) {
     this.to = user.email;
     this.firstName = user.name.split(" ")[0];
-    this.from = `Money hunter <${process.env.EMAIL_USER}>`;
+    this.from = `Edusphere <${process.env.EMAIL_USER}>`;
   }
+
   newTransport() {
     return nodemailer.createTransport({
       service: "gmail",
@@ -15,36 +17,40 @@ module.exports = class Email {
       },
     });
   }
+
   async sendPasswordResetToken(url) {
-    const reponse = passwordResetTemplate(this.firstName, url);
+    const htmlContent = passwordResetTemplate(this.firstName, url);
+
     const mailOptions = {
-      from: process.env.EMAIL_USER,
+      from: this.from,
       to: this.to,
       subject: "Password Reset Request",
-      html: reponse,
+      html: htmlContent,
     };
 
-    await this.newTransport().sendMail(mailOptions, (error, info) => {
-      if (error) {
-        console.error("Error sending email: ", error);
-      } else {
-        console.log("Email sent: ", info.response);
-      }
-    });
+    try {
+      const info = await this.newTransport().sendMail(mailOptions);
+      console.log("Password reset email sent:", info.response);
+    } catch (error) {
+      console.error("Failed to send password reset email:", error);
+    }
   }
+
   async sendRejetAcceptationEmail(subject, text) {
     const mailOptions = {
-      from: process.env.EMAIL_USER,
+      from: this.from,
       to: this.to,
       subject,
       text,
     };
 
     try {
-      let info = await this.newTransport().sendMail(mailOptions);
-      console.log("Email envoyé: " + info.response);
+      const info = await this.newTransport().sendMail(mailOptions);
+      console.log("Email sent:", info.response);
     } catch (error) {
-      console.error("Erreur envoi email:", error);
+      console.error("Failed to send email:", error);
     }
   }
-};
+}
+
+module.exports = Email;

@@ -51,8 +51,9 @@ export default function GuestPage() {
         setIsLoading(true);
 
         const reponse = await getPopulaireCourses();
+        console.log(reponse.data.data);
         if (reponse.status === "success") {
-          setPopulaireCourses(reponse.courses);
+          setPopulaireCourses(reponse.data.data);
         }
       } catch (error) {
         setError(error);

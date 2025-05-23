@@ -11,13 +11,13 @@ import { FaPlayCircle } from "react-icons/fa";
 
 const CourseSection = ({ section, isOpen, onToggle, onLectureClick }) => {
   return (
-    <Card className="border-none w-full">
+    <>
       <Button
         variant="simple"
         outline
         label={section.title}
         iconEnd={isOpen ? HiChevronUp : HiChevronDown}
-        className="w-full justify-between py-4 px-6"
+        className="w-full justify-between py-4 px-6 "
         onClick={onToggle}
       />
 
@@ -42,7 +42,7 @@ const CourseSection = ({ section, isOpen, onToggle, onLectureClick }) => {
           })}
         </div>
       )}
-    </Card>
+    </>
   );
 };
 export default CourseSection;

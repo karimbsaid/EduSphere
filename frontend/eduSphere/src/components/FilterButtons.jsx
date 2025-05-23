@@ -9,6 +9,7 @@ export default function FilterButtons({ options, filterField }) {
 
   function handleSetFilter(value) {
     searchParams.set(filterField, value);
+    searchParams.set("page", 1);
     setSearchParams(searchParams);
   }
 

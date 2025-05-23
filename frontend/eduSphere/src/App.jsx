@@ -25,6 +25,9 @@ import CourseDetailPage from "./pages/CourseDetail";
 import Dashboard from "./pages/Dashboard";
 import { CourseProvider } from "./context/courseContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Navigate } from "react-router-dom";
+import Loading from "./components/Loading";
+
 function App() {
   const queryClient = new QueryClient({
     defaultOptions: {
@@ -35,8 +38,11 @@ function App() {
   });
 
   const LayoutSelector = ({ children }) => {
-    const { user } = useAuth();
+    const { user, isLoading } = useAuth();
     // console.log(user);
+    if (isLoading) {
+      return <isLoading />;
+    }
     return user ? (
       <AppLayout>{children}</AppLayout>
     ) : (
@@ -45,13 +51,13 @@ function App() {
   };
   const HomeRoute = () => {
     const { user, isLoading } = useAuth();
+
     if (isLoading) {
-      return (
-        <div className="flex justify-center items-center min-h-screen bg-gray-100">
-          <Spinner size="lg" />
-          <div className="ml-4 text-lg">Chargement...</div>
-        </div>
-      );
+      return <Loading />;
+    }
+
+    if (user?.role?.name === "Admin" || user?.role?.name === "Instructor") {
+      return <Navigate to="/dashboard" replace />;
     }
 
     return user ? <HomePage /> : <GuestPage />;
@@ -67,15 +73,20 @@ function App() {
               <Route path="/" element={<HomeRoute />} />
             </Route>
             <Route element={<AppLayout />}>
-              <Route path="/my-enrolled-courses" element={<EnrolledCourse />} />
-              <Route
-                path="/course/:courseId/chapter/:sectionId/lecture/:lectureId"
-                element={<CourseLecture />}
-              />
-              <Route
-                path="/course/:courseId/add-review"
-                element={<AddReview />}
-              />
+              <Route element={<ProtectedRoute group={["Student"]} />}>
+                <Route
+                  path="/my-enrolled-courses"
+                  element={<EnrolledCourse />}
+                />
+                <Route
+                  path="/course/:courseId/chapter/:sectionId/lecture/:lectureId"
+                  element={<CourseLecture />}
+                />
+                <Route
+                  path="/course/:courseId/add-review"
+                  element={<AddReview />}
+                />
+              </Route>
               <Route
                 element={<ProtectedRoute group={["Admin", "Instructor"]} />}
               >

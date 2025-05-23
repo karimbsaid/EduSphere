@@ -94,10 +94,10 @@ export default function CoursesPage() {
           query.category = category;
         }
 
-        const response = await getAllcourse(query, token || null);
-        if (response.status === "success") {
+        const { status, data } = await getAllcourse(query, token || null);
+        if (status === "success") {
           // console.log(response.courses);
-          setCourses(response.courses);
+          setCourses(data.data);
         }
       } catch (error) {
         console.error("Error fetching courses:", error);

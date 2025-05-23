@@ -6,13 +6,14 @@ import { FaFilter, FaSearch } from "react-icons/fa";
 import Input from "../../ui/Input";
 import FilterButtons from "../../components/FilterButtons";
 import DropDown from "../../ui/DropDownn";
+import { HiXMark } from "react-icons/hi2";
 
 export default function CourseTableOperation() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [querySearch, setQuerySearch] = useState("");
   const inputRef = useRef(null);
-  const sort = searchParams.get("sort") || "totalStudents";
+  const sort = searchParams.get("sort") || "-createdAt";
   const filterOptions = [
     { value: "tous", label: "Tous" },
     { value: "published", label: "Publié" },
@@ -27,9 +28,12 @@ export default function CourseTableOperation() {
   useEffect(() => {
     function handleKeyDown(e) {
       if (document.activeElement === inputRef.current && e.code === "Enter") {
-        searchParams.set("search", querySearch);
-        setSearchParams(searchParams);
+        const newParams = new URLSearchParams(searchParams);
+        newParams.set("search", querySearch);
+        newParams.set("page", "1"); // reset page to 1 on new search
+        setSearchParams(newParams);
       }
+
       if (e.code === "Enter") {
         inputRef.current.focus();
         setQuerySearch("");
@@ -59,7 +63,11 @@ export default function CourseTableOperation() {
               onChange={(e) => setQuerySearch(e.target.value)}
             />
           </div>
-          <Button label="ajouter un cour" onClick={handleCreateCourseNav} />
+          <Button
+            label="ajouter un cour"
+            onClick={handleCreateCourseNav}
+            variant="simple"
+          />
         </div>
       </div>
       <div className="flex justify-between">

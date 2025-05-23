@@ -12,7 +12,6 @@ import { useAuth } from "../context/authContext";
 
 export default function MainNavigation() {
   const { user, loading } = useAuth();
-  // console.log(user);
   const location = useLocation(); // Utilisé pour vérifier l'URL actuelle
   const [openSubMenus, setOpenSubMenus] = useState({});
 
@@ -76,7 +75,6 @@ export default function MainNavigation() {
 
   // Check if user has a specific permission
   const hasPermission = (permission) => {
-    console.log("user role", user);
     if (!permission) return true;
     return (
       user?.role?.permissions?.some(

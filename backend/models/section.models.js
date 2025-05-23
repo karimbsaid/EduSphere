@@ -40,8 +40,6 @@ sectionSchema.statics.deleteSectionWithLecture = async function (sectionId) {
     throw new Error("Section not found");
   }
 
-  console.log("Section trouvée :", section);
-
   for (const lectureId of section.lectures) {
     await Lecture.deleteLectureWithCloudinary(lectureId);
   }

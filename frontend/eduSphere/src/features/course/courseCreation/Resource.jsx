@@ -44,9 +44,6 @@ export default function Resource({ resource, resourceIndex }) {
         />
       </div>
 
-      <span className="text-gray-500">
-        Si laissé vide, le nom du fichier sera utilisé
-      </span>
       <label className="block text-gray-700 font-medium mb-1">PDF File</label>
       <FileUploader
         acceptedTypes=".pdf , .doc,.docx,.xls,.xlsx"

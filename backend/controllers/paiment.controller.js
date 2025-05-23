@@ -53,7 +53,6 @@ exports.pay = catchAsync(async (req, res, next) => {
     courseId,
     paymentStatus: "pending",
   });
-  console.log("payment", payment);
 
   if (payment) {
     payment.paymentId = paymentData.result.payment_id;

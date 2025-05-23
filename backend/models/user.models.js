@@ -94,17 +94,6 @@ userSchema.virtual("courses", {
 userSchema.pre(/^find/, function (next) {
   this.populate({
     path: "additionalDetails",
-  }).populate({
-    path: "role",
-    select: "name",
-    populate: {
-      path: "permissions",
-      select: "feature authorized",
-      populate: {
-        path: "feature",
-        select: "name",
-      },
-    },
   });
   next();
 });
@@ -113,7 +102,6 @@ userSchema.pre("deleteOne", async function (next) {
   if (!user) return next();
 
   const courses = await Course.find({ instructor: user._id });
-  console.log(courses);
   for (const course of courses) {
     await Course.deleteCourse(course._id);
   }

@@ -1,6 +1,10 @@
 /* eslint-disable react/prop-types */
 const Table = ({ children }) => {
-  return <table className="w-full table-auto ">{children}</table>;
+  return (
+    <div className="w-full ">
+      <table className="w-full table-auto min-w-max">{children}</table>
+    </div>
+  );
 };
 
 const Header = ({ children }) => {

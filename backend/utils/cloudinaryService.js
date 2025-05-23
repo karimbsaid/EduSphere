@@ -44,8 +44,33 @@ const getPublicId = (url) => {
   return publicId;
 };
 
+const handleCloudinaryFileUpdate = async ({
+  file,
+  existingUrl,
+  assetFolder,
+  type = "image",
+}) => {
+  if (!file) return null;
+
+  try {
+    if (existingUrl) {
+      const publicId = getPublicId(existingUrl);
+      if (publicId) {
+        await deleteResourceFromCloudinary(publicId, type);
+      }
+    }
+
+    const result = await uploadToCloudinary(file, assetFolder, type);
+    return result.secure_url;
+  } catch (error) {
+    console.error("Error in Cloudinary file handler:", error.message);
+    throw error;
+  }
+};
+
 // Exporter toutes les fonctions
 module.exports = {
+  handleCloudinaryFileUpdate,
   uploadToCloudinary,
   deleteResourceFromCloudinary,
   moveResourceOnCloudinary,

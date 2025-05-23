@@ -237,7 +237,6 @@ const getRecentActivity = async () => {
 exports.getAdminStats = async (req, res) => {
   try {
     const { period = "month" } = req.query; // Par défaut : dernier mois
-    console.log(period);
     const { startDate, endDate } = getDateRange(period);
 
     // Récupérer toutes les statistiques et données via les fonctions

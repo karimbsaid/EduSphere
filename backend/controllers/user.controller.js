@@ -110,7 +110,6 @@ exports.deleteUser = catchAsync(async (req, res, next) => {
 
 exports.getListOfMyStudents = catchAsync(async (req, res, next) => {
   const userId = req.user._id;
-  console.log(req.query);
 
   // 1. Récupérer les cours créés par l'instructeur
   const instructorCourses = await Course.find({ instructor: userId })

@@ -282,6 +282,97 @@ const courseReducer = (state, action) => {
       };
     }
 
+    case "DELETE_QUIZ_QUESTION": {
+      const { sectionIndex, lectureIndex, questionIndex } = action;
+      const updatedSections = state.sections.map((section, sIdx) =>
+        sIdx === sectionIndex
+          ? {
+              ...section,
+              lectures: section.lectures.map((lecture, lIdx) =>
+                lIdx === lectureIndex
+                  ? {
+                      ...lecture,
+                      questions: lecture.questions.filter(
+                        (_, qIdx) => qIdx !== questionIndex
+                      ),
+                      ...(state.isEdit && { updated: true }),
+                    }
+                  : lecture
+              ),
+            }
+          : section
+      );
+
+      return { ...state, sections: updatedSections };
+    }
+
+    case "ADD_QUIZ_OPTION": {
+      const { sectionIndex, lectureIndex, questionIndex } = action;
+      const updatedSections = state.sections.map((section, sIdx) =>
+        sIdx === sectionIndex
+          ? {
+              ...section,
+              lectures: section.lectures.map((lecture, lIdx) =>
+                lIdx === lectureIndex
+                  ? {
+                      ...lecture,
+                      questions: lecture.questions.map((question, qIdx) =>
+                        qIdx === questionIndex
+                          ? {
+                              ...question,
+                              options:
+                                question.options.length < 4
+                                  ? [
+                                      ...question.options,
+                                      { text: "", isCorrect: false },
+                                    ]
+                                  : question.options,
+                            }
+                          : question
+                      ),
+                      ...(state.isEdit && { updated: true }),
+                    }
+                  : lecture
+              ),
+            }
+          : section
+      );
+      return { ...state, sections: updatedSections };
+    }
+
+    case "DELETE_QUIZ_OPTION": {
+      const { sectionIndex, lectureIndex, questionIndex, optionIndex } = action;
+      const updatedSections = state.sections.map((section, sIdx) =>
+        sIdx === sectionIndex
+          ? {
+              ...section,
+              lectures: section.lectures.map((lecture, lIdx) =>
+                lIdx === lectureIndex
+                  ? {
+                      ...lecture,
+                      questions: lecture.questions.map((question, qIdx) =>
+                        qIdx === questionIndex
+                          ? {
+                              ...question,
+                              options:
+                                question.options.length > 1
+                                  ? question.options.filter(
+                                      (_, oIdx) => oIdx !== optionIndex
+                                    )
+                                  : question.options,
+                            }
+                          : question
+                      ),
+                      ...(state.isEdit && { updated: true }),
+                    }
+                  : lecture
+              ),
+            }
+          : section
+      );
+      return { ...state, sections: updatedSections };
+    }
+
     case "ADD_RESOURCE": {
       //handleAddResource
       const newResource = {
@@ -304,7 +395,7 @@ const courseReducer = (state, action) => {
           ? {
               ...res,
               [field]: value,
-              ...(state.isEdit ? { updated: true } : {}),
+              ...(state.isEdit && !res.isNew && { updated: true }),
             }
           : res
       );

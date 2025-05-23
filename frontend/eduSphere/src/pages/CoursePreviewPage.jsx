@@ -36,7 +36,7 @@ export default function CoursePreviewPage() {
           return;
         }
 
-        const { course } = result;
+        const { data: course } = result;
         setCourseData({
           title: course.title,
           description: course.description,

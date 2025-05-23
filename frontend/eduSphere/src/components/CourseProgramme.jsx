@@ -3,8 +3,7 @@ import React, { useState } from "react";
 import { HiChevronDown, HiChevronRight } from "react-icons/hi2";
 import { NavLink, useParams } from "react-router-dom";
 
-export default function CourseProgramme({ course }) {
-  console.log(course);
+export default function CourseProgramme({ course, progress }) {
   const { sectionId, lectureId } = useParams();
   const [openSections, setOpenSections] = useState({});
 
@@ -15,12 +14,12 @@ export default function CourseProgramme({ course }) {
     }));
   };
 
-  const isSectionCompleted = (sectionId) => {
-    return course.progress?.completedSections.includes(sectionId);
-  };
-  const isLectureCompleted = (lectureId) => {
-    return course.progress?.completedLectures.includes(lectureId);
-  };
+  const isSectionCompleted = (sectionId) =>
+    progress?.completedSections.includes(sectionId);
+
+  const isLectureCompleted = (lectureId) =>
+    progress?.completedLectures.includes(lectureId);
+
   return (
     <div>
       {course && (
@@ -36,9 +35,15 @@ export default function CourseProgramme({ course }) {
         return (
           <div key={section._id}>
             <button
-              className={`flex items-center w-full px-4 py-3 rounded-md transition-colors
-          ${isCurrentSection ? "bg-blue-600" : "hover:bg-gray-700"}
-        `}
+              className={`flex items-center w-full px-4 py-3 rounded-md transition-colors my-2
+    ${
+      sectionCompleted
+        ? "bg-green-500"
+        : isCurrentSection
+        ? "bg-blue-600"
+        : "hover:bg-gray-700"
+    }
+  `}
               onClick={() => toggleSection(section._id)}
             >
               {openSections[section._id] ? (
@@ -59,7 +64,7 @@ export default function CourseProgramme({ course }) {
                     <NavLink
                       key={lecture._id}
                       to={`/course/${course._id}/chapter/${section._id}/lecture/${lecture._id}`}
-                      className={`block mt-2 px-4 py-2 text-sm rounded-md transition-colors
+                      className={`block my-2 px-4 py-2 text-sm rounded-md transition-colors
                   ${isCurrentLecture ? "bg-blue-500 text-white" : ""}
                   ${lectureCompleted || sectionCompleted ? "bg-green-500" : ""}
                   ${

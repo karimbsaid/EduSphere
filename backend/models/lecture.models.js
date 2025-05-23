@@ -4,6 +4,10 @@ const {
   getPublicId,
 } = require("../utils/cloudinaryService");
 
+const cloudinary = require("../config/cloudinary");
+const CloudinaryStorage = require("../services/cloudinaryStorage");
+const storage = new CloudinaryStorage(cloudinary);
+
 // Schéma des options
 const optionSchema = new mongoose.Schema({
   text: { type: String, required: true },
@@ -57,10 +61,11 @@ const lectureSchema = new mongoose.Schema(
 
 lectureSchema.statics.deleteLectureWithCloudinary = async function (lectureId) {
   const lecture = await this.findById(lectureId);
-  console.log(lectureId);
   if (lecture.type === "video" && lecture.url) {
-    const publicId = getPublicId(lecture.url);
-    const res = await deleteResourceFromCloudinary(publicId, "video");
+    // const publicId = getPublicId(lecture.url);
+    // const res = await deleteResourceFromCloudinary(publicId, "video");
+    const publicId = storage.getPublicIdFromUrl(lecture.url);
+    await storage.delete(publicId, "video");
   }
   await lecture.deleteOne();
   return true;

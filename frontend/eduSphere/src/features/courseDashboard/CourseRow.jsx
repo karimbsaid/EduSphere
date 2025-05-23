@@ -17,6 +17,7 @@ import {
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { toast } from "react-hot-toast";
+import DropDown from "../../ui/DropDownn";
 
 export default function CourseRow({ course }) {
   const { user } = useAuth();
@@ -24,6 +25,8 @@ export default function CourseRow({ course }) {
   const { close } = useContext(ModalContext);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+
+  const { setOpenName } = useContext(ModalContext);
   const deleteMutation = useMutation({
     mutationFn: (courseId) => deleteCourse(courseId, token),
     onSuccess: () => {
@@ -55,7 +58,6 @@ export default function CourseRow({ course }) {
     onError: () => toast.error("Échec du rejet."),
   });
 
-  // Vérification des données pour éviter les erreurs
   if (!course || !user) {
     return null;
   }
@@ -88,29 +90,22 @@ export default function CourseRow({ course }) {
 
   // Fonctions pour gérer les actions
   const handleView = () => {
-    console.log(`Voir le cours ${course._id}`);
     navigate(`/course/${course._id}/preview`);
   };
 
   const handleEdit = async () => {
-    console.log(`Éditer le cours ${course._id}`);
     try {
       if (course.status === "published") {
-        // Si le cours est publié, vérifier s'il y a déjà une copie brouillon
         if (course.updatedVersionId) {
-          // Rediriger vers la copie brouillon existante
           navigate(`/my-courses/${course.updatedVersionId}/edit`);
         } else {
-          // Créer une nouvelle copie brouillon
           const { data: newDraft } = await createCourseUpdate(
             course._id,
             token
           );
-          console.log(newDraft);
           navigate(`/my-courses/${newDraft._id}`);
         }
       } else {
-        // Si le cours est en draft ou rejected, modifier directement
         navigate(`/my-courses/${course._id}`);
       }
     } catch (error) {
@@ -133,7 +128,6 @@ export default function CourseRow({ course }) {
 
   const handleSubmitForApproval = async () => {
     try {
-      console.log(`Soumettre le cours ${course._id} pour approbation`);
       await submitCourseForApproval(course._id, token);
       toast.success("Cours soumis pour approbation !");
     } catch (error) {
@@ -144,7 +138,6 @@ export default function CourseRow({ course }) {
 
   const handleResubmit = async () => {
     try {
-      console.log(`Resoumettre le cours ${course._id}`);
       await submitCourseForApproval(course._id, token);
       toast.success("Cours resoumis pour approbation !");
     } catch (error) {
@@ -168,6 +161,7 @@ export default function CourseRow({ course }) {
     hasPermission("delete_courses") &&
     course.status !== "pending" && // Non disponible si pending
     course.totalStudents === 0; // Non disponible si totalStudents > 0
+
   const canSubmit =
     isCourseOwner && hasPermission("edit_courses") && course.status === "draft"; // Disponible si draft
   const canResubmit =
@@ -193,8 +187,56 @@ export default function CourseRow({ course }) {
         />
       </Table.Cell>
       <Table.Cell className="text-right">
-        <Modal>
-          <ActionMenu>
+        <DropDown>
+          <DropDown.Button label="actions" />
+          <DropDown.Content>
+            <DropDown.Item type="action" onClick={handleView}>
+              voir
+            </DropDown.Item>
+            {canEdit && (
+              <DropDown.Item type="action" onClick={handleEdit}>
+                Éditer
+              </DropDown.Item>
+            )}
+            {canDelete && (
+              <>
+                <DropDown.Item
+                  type="action"
+                  onClick={() => setOpenName(`delete-${course._id}`)}
+                >
+                  Supprimer
+                </DropDown.Item>
+              </>
+            )}
+
+            {canSubmit && (
+              <DropDown.Item type="action" onClick={handleSubmitForApproval}>
+                Soumettre pour approbation
+              </DropDown.Item>
+            )}
+
+            {canResubmit && (
+              <DropDown.Item type="action" onClick={handleResubmit}>
+                Resoumettre
+              </DropDown.Item>
+            )}
+
+            {showApproveReject && (
+              <>
+                <DropDown.Item type="action" onClick={handleApprove}>
+                  Approuver
+                </DropDown.Item>
+                <DropDown.Item
+                  type="action"
+                  onClick={() => setOpenName(`reject-${course._id}`)}
+                >
+                  Rejeter
+                </DropDown.Item>
+              </>
+            )}
+          </DropDown.Content>
+        </DropDown>
+        {/* <ActionMenu>
             <ActionMenu.Item onClick={handleView}>Voir</ActionMenu.Item>
 
             {canEdit && (
@@ -241,8 +283,19 @@ export default function CourseRow({ course }) {
                 </Modal.Window>
               </>
             )}
-          </ActionMenu>
-        </Modal>
+          </ActionMenu> */}
+
+        <Modal.Window name={`delete-${course._id}`}>
+          <ConfirmDelete
+            user={course}
+            confirmationText={`Je suis sûr de supprimer le cours ${course.title}`}
+            onConfirm={handleDelete}
+          />
+        </Modal.Window>
+
+        <Modal.Window name={`reject-${course._id}`}>
+          <RejetCourForm id={course._id} onConfirm={handleReject} />
+        </Modal.Window>
       </Table.Cell>
     </Table.Row>
   );

@@ -1,8 +1,13 @@
 /* eslint-disable react/prop-types */
-import { HiOutlineTrash } from "react-icons/hi2";
+import {
+  HiOutlineTrash,
+  HiQuestionMarkCircle,
+  HiVideoCamera,
+} from "react-icons/hi2";
 import ContentItem from "./ContentItem";
 import { CourseContext } from "../../../context/courseContext";
 import { useContext } from "react";
+import Button from "../../../ui/Button";
 
 export default function Section({ section, sectionIndex }) {
   const { dispatch } = useContext(CourseContext);
@@ -48,18 +53,22 @@ export default function Section({ section, sectionIndex }) {
         </div>
       ))}
       <div className="mt-4 flex space-x-2">
-        <button
-          className="p-2 border rounded hover:bg-gray-50"
+        <Button
+          variant="simple"
+          outline
           onClick={() => handleAddContent("video")}
         >
-          📹 Ajouter une vidéo
-        </button>
-        <button
-          className="p-2 border rounded hover:bg-gray-50"
+          <HiVideoCamera />
+          <span> Ajouter une vidéo</span>
+        </Button>
+        <Button
+          variant="simple"
+          outline
           onClick={() => handleAddContent("quiz")}
         >
-          ❓ Ajouter un quiz
-        </button>
+          <HiQuestionMarkCircle />
+          <span>Ajouter un quiz</span>
+        </Button>
       </div>
     </div>
   );

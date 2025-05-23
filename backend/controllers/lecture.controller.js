@@ -5,99 +5,77 @@ const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
 const Lecture = require("../models/lecture.models");
 const slugify = require("slugify");
-const {
-  uploadToCloudinary,
-  deleteResourceFromCloudinary,
-} = require("../utils/cloudinaryService");
-//créer une  nouvelle lecon
+// const {
+//   uploadToCloudinary,
+//   deleteResourceFromCloudinary,
+//   handleCloudinaryFileUpdate,
+// } = require("../utils/cloudinaryService");
+const CloudinaryStorage = require("../services/cloudinaryStorage");
+const cloudinary = require("../config/cloudinary");
+const storage = new CloudinaryStorage(cloudinary);
 exports.createLecture = catchAsync(async (req, res, next) => {
-  console.log("creation lecture");
-  const { courseId, sectionId } = req.params;
-  if (req.body.questions) {
-    try {
-      req.body.questions = JSON.parse(req.body.questions);
-    } catch (error) {
-      return next(new AppError("Format des questions invalide", 400));
-    }
-  }
-  let session;
+  const { course, section, user } = req;
+  const { title, type, duration = 0, questions } = req.body;
+
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
   try {
-    session = await mongoose.startSession();
-    console.log(session);
-    session.startTransaction();
-    const { title, type, duration = 0, questions } = req.body;
-    const course = await Course.findById(courseId).session(session);
-    const section = await Section.findById(sectionId).session(session);
-    if (!course || !section) {
-      return next(new AppError("Course or Section not found", 404));
-    }
-
     let url = "";
-    const slug_title = slugify(section.title, { lower: true, strict: true });
 
-    // Si la leçon est de type vidéo, télécharger la vidéo sur Cloudinary
+    // Upload video if lecture type is 'video'
     if (type === "video" && req.files && req.files.video) {
-      const folder = `courses/${course.title}/${slug_title}`;
-      const video = await uploadToCloudinary(req.files.video, folder);
+      const folder = `courses/${course.title}/${slugify(section.title, {
+        lower: true,
+        strict: true,
+      })}`;
+      const video = await storage.upload(req.files.video, folder);
       url = video.secure_url;
     }
 
-    // Créer la leçon
-    const lecture = await Lecture.create({ ...req.body, url, duration });
-    // Ajouter la leçon à la section
-    section.lectures.push(lecture._id);
-    course.totalDuration = course.totalDuration + duration;
-    await section.save();
-    await course.save();
+    // Create lecture
+    const lecture = await Lecture.create([{ ...req.body, url, duration }], {
+      session,
+    });
+
+    // Update section and course
+    section.lectures.push(lecture[0]._id);
+    course.totalDuration += duration;
+
+    await section.save({ session });
+    await course.save({ session });
+
     await session.commitTransaction();
 
-    res.status(201).json({ status: "success", data: lecture });
-  } catch (error) {
+    res.status(201).json({ status: "success", data: lecture[0] });
+  } catch (err) {
     await session.abortTransaction();
-    return next(error);
+    next(err);
   } finally {
     session.endSession();
   }
 });
+
 //mis à jour d'un lecon
 
 exports.updateLecture = catchAsync(async (req, res, next) => {
-  const { lectureId, courseId, sectionId } = req.params;
-  const { title, type } = req.body;
+  const { lectureId } = req.params;
+  const { type } = req.body;
+  const { course, section, lecture } = req;
+
   const session = await mongoose.startSession();
   session.startTransaction();
   try {
-    const course = await Course.findById(courseId).session(session);
-    const section = await Section.findById(sectionId).session(session);
-    const lecture = await Lecture.findById(lectureId).session(session);
-    if (!course || !section || !lecture) {
-      return next(new AppError("Course, Section, or Lecture not found", 404));
-    }
-    if (req.body.questions) {
-      try {
-        req.body.questions = JSON.parse(req.body.questions);
-      } catch (error) {
-        return next(new AppError("Format des questions invalide", 400));
-      }
-    }
-    // Si la leçon est de type vidéo et qu'un nouveau fichier est fourni, remplacer l'ancienne vidéo
     if (type === "video" && req.files && req.files.video) {
       const folder = `courses/${course.title}/${section.title}`;
 
-      // Supprimer l'ancienne vidéo de Cloudinary
-      if (lecture.url) {
-        const publicId = lecture.url
-          .split("/")
-          .slice(-2)
-          .join("/")
-          .split(".")[0];
-        await cloudinary.uploader.destroy(publicId, { resource_type: "video" });
-      }
-
-      // Télécharger la nouvelle vidéo sur Cloudinary
-      const video = await uploadToCloudinary(req.files.video, folder);
-      req.body.url = video.secure_url;
+      const newVideoUrl = await storage.updateFile({
+        file: req.files.video,
+        existingUrl: lecture.url,
+        assetFolder: folder,
+        type: "video",
+      });
+      req.body.url = newVideoUrl;
     }
 
     // Mettre à jour la leçon
@@ -122,31 +100,15 @@ exports.updateLecture = catchAsync(async (req, res, next) => {
 
 // Suppression d'une leçon
 exports.deleteLecture = catchAsync(async (req, res, next) => {
-  const { lectureId, courseId, sectionId } = req.params;
+  const { course, section, lecture } = req;
 
   const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
-    const course = await Course.findById(courseId).session(session);
-    const section = await Section.findById(sectionId)
-      .populate("lectures")
-      .session(session);
-    const lecture = await Lecture.findById(lectureId).session(session);
-
-    if (!course || !section || !lecture) {
-      next(new AppError("Cours, section ou leçon non trouvé", 404));
-    }
-    if (course.instructor.toString() !== req.user._id.toString()) {
-      next(new AppError("Vous n’êtes pas autorisé à modifier ce cours", 403));
-    }
-    if (course.status === "pending") {
-      next(new AppError("Ce cours est en attente d’approbation", 400));
-    }
-
-    section.lectures.pull(lectureId);
+    section.lectures.pull(lecture._id);
     await section.save({ session });
-    await Lecture.findByIdAndDelete(lectureId, { session });
+    await Lecture.deleteLectureWithCloudinary(lecture._id);
 
     await session.commitTransaction();
     res.status(204).json({ status: "success", message: "Leçon supprimée" });

@@ -78,6 +78,9 @@ const courseSchema = new mongoose.Schema(
 );
 
 courseSchema.pre("save", function (next) {
+  if (typeof this.tags === "string") {
+    this.tags = this.tags.split(",").map((tag) => tag.trim());
+  }
   if (!this.slug) {
     this.slug = slugify(this.title, { lower: true, strict: true });
   }
@@ -91,8 +94,8 @@ courseSchema.index({
   tags: "text",
 });
 
-courseSchema.virtual("revenu").get(function () {
-  return this.price * this.totalStudents; // Ajusté pour totalStudents
+courseSchema.virtual("revenue").get(function () {
+  return this.totalStudents * this.price; // Ajusté pour totalStudents
 });
 
 courseSchema.statics.getCourseResources = async function (courseId) {

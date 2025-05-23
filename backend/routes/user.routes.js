@@ -28,7 +28,7 @@ router.delete(
 
 router.use(auth.protect);
 router.get("/me", profileController.getMe);
-router.get("/me/my-courses", auth.protect, courseController.getMyCourses);
+// router.get("/me/my-courses", auth.protect, courseController.getMyCourses);
 router.get(
   "/me/my-students",
   auth.protect,
