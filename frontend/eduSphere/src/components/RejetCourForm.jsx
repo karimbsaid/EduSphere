@@ -7,7 +7,7 @@ export default function RejetCourForm({ id, onConfirm, onClose }) {
 
   return (
     <div className="p-4 flex flex-col gap-5 ">
-      <p className="text-sm text-gray-700">Saisir raison de rejet :</p>
+      <p className="text-lg text-gray-700">Saisir raison de rejet :</p>
 
       <textarea
         id="rejet"

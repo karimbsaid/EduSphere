@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { getPopulaireCourses, getStats } from "../services/apiCourse";
+import { getPopulaireCourses } from "../services/apiCourse";
 import CourseCard from "../components/CourseCard";
 
 import HeroSection from "../features/HomePage/guest/HeroSection";
@@ -8,6 +8,7 @@ import StatsSection from "../features/HomePage/guest/StatsSection";
 import Process from "../features/HomePage/guest/Process";
 import Input from "../ui/Input";
 import { Link, useNavigate } from "react-router-dom";
+import { getStats } from "../services/apiStats";
 
 export default function GuestPage() {
   const [stats, setStats] = useState({});
@@ -51,7 +52,6 @@ export default function GuestPage() {
         setIsLoading(true);
 
         const reponse = await getPopulaireCourses();
-        console.log(reponse.data.data);
         if (reponse.status === "success") {
           setPopulaireCourses(reponse.data.data);
         }

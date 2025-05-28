@@ -1,28 +1,18 @@
+import { apiClient } from "./apiClient";
+
 const API_URL = "http://localhost:8080/api/v1/";
 
 export const getCourseReviews = async (courseId) => {
-  const response = await fetch(`${API_URL}courses/${courseId}/reviews`, {
-    method: "GET",
-  });
-  const data = await response.json();
-
-  return data;
+  return apiClient(`/courses/${courseId}/reviews`);
 };
 
 export const createReview = async (courseId, token, reviewData) => {
-  const response = await fetch(`${API_URL}courses/${courseId}/reviews`, {
+  return apiClient(`/courses/${courseId}/reviews`, {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-
-    body: JSON.stringify({
+    token,
+    body: {
       rating: reviewData.rating,
       comment: reviewData.comment,
-    }),
+    },
   });
-
-  if (!response.ok) throw new Error("Erreur lors de la creation du review");
-  return response.json();
 };

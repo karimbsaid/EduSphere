@@ -32,6 +32,11 @@ export default function MainNavigation() {
       permission: "view_analytics",
       subItems: [
         {
+          label: "Tableau de bord",
+          path: "/dashboard",
+          permission: "view_analytics",
+        },
+        {
           label: "Utilisateurs",
           path: "/dashboard/users",
           permission: "manage_users",
@@ -41,15 +46,21 @@ export default function MainNavigation() {
           path: "/dashboard/courses",
           permission: "manage_courses",
         },
-        {
-          label: "Tableau de bord",
-          path: "/dashboard",
-          permission: "view_analytics",
-        },
+
         {
           label: "Paiements",
           path: "/dashboard/payments",
           permission: "manage_payments",
+        },
+        {
+          label: "Roles",
+          path: "/dashboard/role",
+          permission: "manage_roles",
+        },
+        {
+          label: "Permissions",
+          path: "/dashboard/feature",
+          permission: "manage_permissions",
         },
 
         {
@@ -137,7 +148,7 @@ export default function MainNavigation() {
             <div key={path}>
               <button
                 onClick={() => toggleSubMenu(path)}
-                className={`flex items-center w-full px-4 py-3 rounded-md hover:bg-teal-600 transition-colors ${
+                className={`flex items-center w-full my-1 px-4 py-1 rounded-md hover:bg-teal-600 transition-colors ${
                   isParentActive ? "bg-teal-600" : "text-gray-200"
                 }`}
               >

@@ -4,7 +4,6 @@ import { motion } from "framer-motion";
 import { FaBook, FaUserGraduate, FaChalkboardTeacher } from "react-icons/fa";
 
 const StatsSection = ({ totalCourses, totalStudents, totalInstructors }) => {
-  console.log(totalInstructors, totalStudents);
   const stats = [
     { label: "Cours", value: totalCourses, icon: FaBook },
     { label: "Apprenants", value: totalStudents, icon: FaUserGraduate },

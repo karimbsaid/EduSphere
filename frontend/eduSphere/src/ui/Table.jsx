@@ -1,22 +1,54 @@
 /* eslint-disable react/prop-types */
-// Table.js
-const Table = ({ children, className = "" }) => {
-  return <table className={`w-full table-auto ${className}`}>{children}</table>;
+const Table = ({ children }) => {
+  return (
+    <div className="w-full ">
+      <table className="w-full table-auto min-w-max">{children}</table>
+    </div>
+  );
 };
 
-const TableHeader = ({ children }) => {
-  return <thead className="bg-gray-100">{children}</thead>;
+const Header = ({ children }) => {
+  return (
+    <thead className="bg-gray-200 uppercase font-semibold">
+      <tr>{children}</tr>
+    </thead>
+  );
 };
 
-const TableBody = ({ children }) => {
-  return <tbody>{children}</tbody>;
+const Body = ({ data, render }) => {
+  if (!data.length)
+    return (
+      <tbody>
+        <tr>
+          <td colSpan="100%" className="text-center py-4 text-gray-500">
+            No data to show at the moment
+          </td>
+        </tr>
+      </tbody>
+    );
+
+  return <tbody>{data.map(render)}</tbody>;
 };
 
-const TableRow = ({ children, className = "" }) => {
-  return <tr className={className}>{children}</tr>;
+const Row = ({ children }) => {
+  return <tr>{children}</tr>;
+};
+const Cell = ({ children, className = "" }) => {
+  return <td className={`py-3 px-6 ${className}`}>{children}</td>;
+};
+const Footer = ({ children }) => {
+  return (
+    <tfoot>
+      <tr>
+        <td colSpan="100%">
+          <div className="w-full">{children}</div>
+        </td>
+      </tr>
+    </tfoot>
+  );
 };
 
-const TableHead = ({ children }) => {
+const Head = ({ children }) => {
   return (
     <th className="py-3 px-6 text-left text-sm font-medium text-gray-600">
       {children}
@@ -24,8 +56,10 @@ const TableHead = ({ children }) => {
   );
 };
 
-const TableCell = ({ children, className = "" }) => {
-  return <td className={`py-3 px-6 ${className}`}>{children}</td>;
-};
-
-export { Table, TableHeader, TableBody, TableRow, TableHead, TableCell };
+Table.Row = Row;
+Table.Footer = Footer;
+Table.Body = Body;
+Table.Header = Header;
+Table.Cell = Cell;
+Table.Head = Head;
+export default Table;

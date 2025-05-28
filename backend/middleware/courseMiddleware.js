@@ -120,7 +120,7 @@ exports.checkIsAdminOrInstructor = (req, res, next) => {
   const course = req.course;
 
   const isInstructor = course.instructor.toString() === user._id.toString();
-  const isAdmin = user.role === "Admin"; // Adjust if your role field uses a different name
+  const isAdmin = user.role.name === "Admin"; // Adjust if your role field uses a different name
 
   if (!isInstructor && !isAdmin) {
     return next(

@@ -1,8 +1,9 @@
 /* eslint-disable react/prop-types */
 import { FiMail, FiPhone } from "react-icons/fi";
-import { Modal } from "../../ui/ModalOff";
+import { Modal } from "../../ui/Modal";
 import Button from "../../ui/Button";
 import ProfileForm from "./ProfileForm";
+import Avatar from "../../components/Avatar";
 const ProfileInfo = ({ profile, handleSubmit }) => {
   return (
     <div className="space-y-6 mt-6">
@@ -16,17 +17,11 @@ const ProfileInfo = ({ profile, handleSubmit }) => {
         </div>
         <div className="p-6 space-y-6">
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row sm:items-start sm:justify-start">
-            <div className="relative">
-              <div className="h-32 w-32 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
-                <img
-                  src={profile.avatar || "/placeholder.svg"}
-                  alt={profile.name}
-                  width={128}
-                  height={128}
-                  className="h-full w-full object-cover"
-                />
-              </div>
-            </div>
+            <Avatar
+              image={profile.avatar || "/placeholder.svg"}
+              alt={profile.name || "user name"}
+              size={32}
+            />
             <div className="space-y-1 text-center sm:text-left">
               <h3 className="text-2xl font-bold">{profile.name}</h3>
               <div className="flex flex-col gap-2 text-gray-500">
@@ -38,8 +33,8 @@ const ProfileInfo = ({ profile, handleSubmit }) => {
                   <FiPhone className="h-4 w-4" />
                   <span>{profile.phone}</span>
                 </div>
-                <div className=" gap-2">
-                  <h3 className="text-lg font-medium">bio </h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-base font-medium">bio </h3>
                   <span>{profile.bio}</span>
                 </div>
               </div>
@@ -48,10 +43,10 @@ const ProfileInfo = ({ profile, handleSubmit }) => {
 
           <div className="border-t my-6"></div>
 
-          <div className="flex justify-end">
+          <div className="flex justify-center">
             <Modal>
               <Modal.Open opens="editProfile">
-                <Button label="Modifier le profil" size="sm" />
+                <Button label="Modifier le profil" size="sm" variant="simple" />
               </Modal.Open>
 
               <Modal.Window name="editProfile">

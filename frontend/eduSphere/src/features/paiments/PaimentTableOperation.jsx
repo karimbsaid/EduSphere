@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import DropDown from "../../ui/DropDownn";
+import DropDown from "../../ui/DropDown";
 import { FaFilter, FaSearch } from "react-icons/fa";
 import FilterButtons from "../../components/FilterButtons";
 import Input from "../../ui/Input";

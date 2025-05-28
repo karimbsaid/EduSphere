@@ -8,6 +8,8 @@ const ProtectedRoute = ({ group }) => {
   if (isLoading) {
     return <Loading />;
   }
+  console.log("group", group);
+  console.log(userBelongsToGroup(group));
   if (!user || !userBelongsToGroup(group)) {
     return <Navigate to="/login" />;
   }

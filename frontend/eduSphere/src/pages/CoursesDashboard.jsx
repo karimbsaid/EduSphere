@@ -3,11 +3,11 @@ import { useAuth } from "../context/authContext";
 import { useSearchParams } from "react-router-dom";
 import CourseTableOperation from "../features/courseDashboard/CourseTableOperation";
 import Card from "../ui/Card";
-import Table from "../ui/TableOff";
+import Table from "../ui/Table";
 import CourseRow from "../features/courseDashboard/CourseRow";
 import Pagination from "../components/Pagination";
-import { Modal } from "../ui/ModalOff";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Modal } from "../ui/Modal";
+import { useQuery } from "@tanstack/react-query";
 import Loading from "../components/Loading";
 import { useEffect } from "react";
 
@@ -33,7 +33,7 @@ export default function CoursesDashboard() {
     setSearchParams({});
   }, []);
 
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading, isFetching, isError } = useQuery({
     queryKey: [
       "courses",
       { page: currentPage, limit, sort, search, status, token },
@@ -55,6 +55,9 @@ export default function CoursesDashboard() {
   if (isLoading) {
     return <Loading />;
   }
+  if (isFetching) {
+    return <Loading />;
+  }
 
   return (
     <div>
@@ -65,14 +68,12 @@ export default function CoursesDashboard() {
           <Modal>
             <Table>
               <Table.Header>
-                <Table.Row>
-                  <Table.Head>Cours</Table.Head>
-                  <Table.Head>Instructeur</Table.Head>
-                  <Table.Head>Catégorie</Table.Head>
-                  <Table.Head>Prix</Table.Head>
-                  <Table.Head>Status</Table.Head>
-                  <Table.Head>Actions</Table.Head>
-                </Table.Row>
+                <Table.Head>Cours</Table.Head>
+                <Table.Head>Instructeur</Table.Head>
+                <Table.Head>Catégorie</Table.Head>
+                <Table.Head>Prix</Table.Head>
+                <Table.Head>Status</Table.Head>
+                <Table.Head>Actions</Table.Head>
               </Table.Header>
               <Table.Body
                 data={courses}

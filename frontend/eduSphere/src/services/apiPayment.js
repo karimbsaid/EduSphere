@@ -1,22 +1,11 @@
-const API_URL = "http://localhost:8080/api/v1/";
+import { apiClient } from "./apiClient";
+
 export const pay = async (courseId, token) => {
-  const response = await fetch(`${API_URL}payments/${courseId}`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-  return response.json();
+  return apiClient(`/payments/${courseId}`, { method: "POST", token });
 };
 
 export const getAllPayments = async (query = {}, token) => {
   const queryString = new URLSearchParams(query).toString();
-  console.log(queryString);
-  const response = await fetch(`${API_URL}payments?${queryString}`, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-  return response.json();
+
+  return apiClient(`/payments?${queryString}`, { token });
 };

@@ -2,19 +2,14 @@
 import { useEffect, useState } from "react";
 
 import { useAuth } from "../context/authContext";
-import {
-  getCourseDetail,
-  getCourseProgramme,
-  getResources,
-} from "../services/apiCourse";
+import { getCourseProgramme, getResources } from "../services/apiCourse";
 import CourseTabs from "./CourseTabs";
 import MainNavigation from "./MainNavigation";
 import { getProgress } from "../services/apiEnrollment";
-import { getMyprofile } from "../services/apiProfile";
 import UserPanel from "./UserPanel";
 import { HiX } from "react-icons/hi";
 import { useNavigate } from "react-router-dom";
-import { Modal } from "../ui/ModalOff";
+import { Modal } from "../ui/Modal";
 import { HiStar } from "react-icons/hi2";
 import AddReview from "../features/review/AddReview";
 import Loading from "./Loading";
@@ -64,9 +59,9 @@ export default function SideBar({ courseId, sectionId, onClose }) {
 
     fetchData();
   }, [courseId, sectionId, token]);
-  if (isLoading) {
-    return <Loading />;
-  }
+  // if (isLoading) {
+  //   return <Loading />;
+  // }
 
   return (
     <aside

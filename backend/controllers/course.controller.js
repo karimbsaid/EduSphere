@@ -28,6 +28,10 @@ exports.getTopPopularCourses = (req, res, next) => {
   req.query.sort = "-totalStudents";
   next();
 };
+exports.getAllCourseTitle = (req, res, next) => {
+  req.query.fields = "title";
+  next();
+};
 
 //get managed cours pour cour sachbord for admin and instructor
 exports.getManagedCours = (req, res, next) => {
@@ -119,15 +123,25 @@ exports.getCourseDetails = catchAsync(async (req, res, next) => {
 
 // Création d'un cours
 
+exports.createFullCourse = catchAsync(async (req, res, next) => {
+  const course = await courseService.createFullCourse(
+    req.body,
+    req.user,
+    req.files
+  );
+
+  res.status(201).json({
+    status: "success",
+    message: "Cours créé avec succès",
+    data: course,
+  });
+});
+
 exports.createCourse = catchAsync(async (req, res, next) => {
   let imageUrl = "";
   let assetFolder = "";
 
   if (req.files?.coverImage) {
-    // const uploadedImage = await uploadToCloudinary(
-    //   req.files.coverImage,
-    //   `courses/${req.body.slug}`
-    // );
     const uploadedImage = await storage.upload(
       req.files.coverImage,
       `courses/${req.body.slug}`
@@ -149,117 +163,6 @@ exports.createCourse = catchAsync(async (req, res, next) => {
   });
 });
 
-// exports.createCourseUpdate = catchAsync(async (req, res, next) => {
-//   const { courseId } = req.params;
-//   const user = req.user;
-
-//   const session = await mongoose.startSession();
-//   session.startTransaction();
-
-//   try {
-//     const originalCourse = await Course.findById(courseId)
-//       .populate({
-//         path: "sections",
-//         populate: { path: "lectures" },
-//       })
-//       .populate("resources")
-//       .session(session);
-//     if (!originalCourse) {
-//       return next(new AppError("Cours non trouvé", 404));
-//     }
-
-//     if (originalCourse.instructor.toString() !== user._id.toString()) {
-//       return next(
-//         new AppError("Vous n’êtes pas autorisé à modifier ce cours", 403)
-//       );
-//     }
-//     if (originalCourse.status !== "published") {
-//       return next(new AppError("Ce cours n’est pas publié", 400));
-//     }
-//     if (originalCourse.updatedVersionId) {
-//       return next(new AppError("Une mise à jour est déjà en cours", 400));
-//     }
-
-//     // Créer de nouvelles leçons pour chaque section
-//     const newSections = [];
-//     for (const originalSection of originalCourse.sections) {
-//       const newLectures = [];
-//       for (const originalLecture of originalSection.lectures) {
-//         const newLecture = await Lecture.create(
-//           [
-//             {
-//               title: originalLecture.title,
-//               type: originalLecture.type,
-//               url: originalLecture.url,
-//               duration: originalLecture.duration,
-//               questions: originalLecture.questions,
-//             },
-//           ],
-//           { session }
-//         );
-//         originalLecture.draftVersion = newLecture[0]._id;
-//         await originalLecture.save({ session });
-//         newLectures.push(newLecture[0]._id);
-//       }
-
-//       const newSection = await Section.create(
-//         [{ title: originalSection.title, lectures: newLectures }],
-//         { session }
-//       );
-//       originalSection.draftVersion = newSection[0]._id;
-//       await originalSection.save({ session });
-//       newSections.push(newSection[0]._id);
-//     }
-
-//     const newResources = [];
-//     for (const originalResource of originalCourse.resources) {
-//       const newResource = await Resource.create(
-//         [
-//           {
-//             title: originalResource.title,
-//             resourceUrl: originalResource.resourceUrl,
-//           },
-//         ],
-//         { session }
-//       );
-//       newResources.push(newResource[0]._id);
-//     }
-
-//     // Créer le cours brouillon
-//     const draftCourseData = {
-//       title: `${originalCourse.title} (brouillon)`,
-//       description: originalCourse.description,
-//       imageUrl: originalCourse.imageUrl,
-//       status: "draft",
-//       level: originalCourse.level,
-//       price: originalCourse.price,
-//       category: originalCourse.category,
-//       tags: originalCourse.tags,
-//       instructor: originalCourse.instructor,
-//       totalStudents: 0,
-//       totalStudentComplete: 0,
-//       totalDuration: originalCourse.totalDuration,
-//       sections: newSections,
-//       resources: newResources,
-//       assetFolder: originalCourse.assetFolder,
-//       parentCourseId: originalCourse._id,
-//       slug: `${originalCourse.slug}-draft-${Date.now()}`,
-//     };
-
-//     const draftCourse = await Course.create([draftCourseData], { session });
-//     originalCourse.updatedVersionId = draftCourse[0]._id;
-//     await originalCourse.save({ session });
-
-//     await session.commitTransaction();
-//     res.status(201).json({ status: "success", data: draftCourse[0] });
-//   } catch (error) {
-//     await session.abortTransaction();
-//     return next(error);
-//   } finally {
-//     session.endSession();
-//   }
-// });
-
 //creer un cour brouillon
 exports.createCourseUpdate = catchAsync(async (req, res, next) => {
   const { courseId } = req.params;
@@ -276,13 +179,6 @@ exports.updateCourse = catchAsync(async (req, res, next) => {
   const { courseId } = req.params;
   const course = req.course;
   if (req.files && req.files.coverImage) {
-    // const imageUrl = await handleCloudinaryFileUpdate({
-    //   file: req.files.coverImage,
-    //   existingUrl: course.imageUrl,
-    //   assetFolder: course.assetFolder,
-    //   type: "image",
-    // });
-
     const imageUrl = await storage.updateFile({
       file: req.files.coverImage,
       existingUrl: course.imageUrl,
@@ -313,39 +209,4 @@ exports.deleteCourse = catchAsync(async (req, res, next) => {
   await Course.deleteCourse(courseId);
 
   res.status(204).json({ status: "success", message: "Course deleted" });
-});
-
-//get statistic for guests
-exports.getStatistics = catchAsync(async (req, res) => {
-  const totalCourses = await Course.countDocuments();
-
-  const coursesByCategory = await Course.aggregate([
-    {
-      $group: {
-        _id: "$category",
-        totalCourses: { $sum: 1 },
-      },
-    },
-  ]);
-
-  const instructorRole = await Role.findOne({ name: "Instructor" });
-  const studentRole = await Role.findOne({ name: "student" });
-
-  const totalInstructors = instructorRole
-    ? await User.countDocuments({ role: instructorRole._id })
-    : 0;
-
-  const totalStudents = studentRole
-    ? await User.countDocuments({ role: studentRole._id })
-    : 0;
-
-  res.status(200).json({
-    status: "success",
-    data: {
-      totalCourses,
-      coursesByCategory,
-      totalInstructors,
-      totalStudents,
-    },
-  });
 });

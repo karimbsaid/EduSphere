@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/authContext";
 import Spinner from "../ui/Spinner";
 import Card from "../ui/Card";
-import Table from "../ui/TableOff";
+import Table from "../ui/Table";
 import Pagination from "../components/Pagination";
 import { getListOfMyStudents } from "../services/apiEnrollment";
 import StudentTableOperation from "../features/students/StudentTableOperation";
@@ -75,14 +75,12 @@ export default function EnrolledStudentPage() {
         <div className="rounded-md border">
           <Table>
             <Table.Header>
-              <Table.Row>
-                <Table.Head>Nom étudiant</Table.Head>
-                <Table.Head>Email étudiant</Table.Head>
-                <Table.Head>Nom de cour</Table.Head>
-                <Table.Head>Date inscrit</Table.Head>
-                <Table.Head>Progress</Table.Head>
-                <Table.Head>Paiment status</Table.Head>
-              </Table.Row>
+              <Table.Head>Nom étudiant</Table.Head>
+              <Table.Head>Email étudiant</Table.Head>
+              <Table.Head>Nom de cour</Table.Head>
+              <Table.Head>Date inscrit</Table.Head>
+              <Table.Head>Progress</Table.Head>
+              <Table.Head>Paiment status</Table.Head>
             </Table.Header>
             <Table.Body
               data={students}

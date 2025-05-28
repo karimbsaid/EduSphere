@@ -1,12 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { getMyEnrolledCourse } from "../services/apiEnrollment";
 import { useAuth } from "../context/authContext";
-import DropDown from "../ui/DropDownn";
-import Input from "../ui/Input";
-import { HiMiniMagnifyingGlass } from "react-icons/hi2";
 import EnrolledCourseTab from "../features/course/enrolledCourses/EnrolledCourseTab";
 import { useSearchParams } from "react-router-dom";
-import Button from "../ui/Button";
 import Spinner from "../ui/Spinner";
 
 export default function EnrolledCourse() {

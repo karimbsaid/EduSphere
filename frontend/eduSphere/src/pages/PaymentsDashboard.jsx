@@ -1,11 +1,11 @@
-import React, { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/authContext";
 import { getAllPayments } from "../services/apiPayment";
 import Spinner from "../ui/Spinner";
 import Card from "../ui/Card";
 import PaimentTableOperation from "../features/paiments/PaimentTableOperation";
-import Table from "../ui/TableOff";
+import Table from "../ui/Table";
 import PaimentRow from "../features/paiments/PaimentRow";
 import Pagination from "../components/Pagination";
 export default function PaymentsDashboard() {

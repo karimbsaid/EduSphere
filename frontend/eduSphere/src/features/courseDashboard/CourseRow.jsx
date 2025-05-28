@@ -1,10 +1,9 @@
 /* eslint-disable react/prop-types */
-import React, { useContext } from "react";
-import Table from "../../ui/TableOff";
+import { useContext } from "react";
+import Table from "../../ui/Table";
 import Badge from "../../ui/Badge";
-import { Modal, ModalContext } from "../../ui/ModalOff";
+import { Modal, ModalContext } from "../../ui/Modal";
 import ConfirmDelete from "../../components/ConfirmDelete";
-import ActionMenu from "../../ui/ActionMenu";
 import RejetCourForm from "../../components/RejetCourForm";
 import { useAuth } from "../../context/authContext";
 import { useNavigate } from "react-router-dom";
@@ -17,7 +16,7 @@ import {
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { toast } from "react-hot-toast";
-import DropDown from "../../ui/DropDownn";
+import DropDown from "../../ui/DropDown";
 
 export default function CourseRow({ course }) {
   const { user } = useAuth();
@@ -159,8 +158,17 @@ export default function CourseRow({ course }) {
   const canDelete =
     isCourseOwner &&
     hasPermission("delete_courses") &&
-    course.status !== "pending" && // Non disponible si pending
-    course.totalStudents === 0; // Non disponible si totalStudents > 0
+    course.status !== "pending" &&
+    course.totalStudents === 0;
+  console.log(
+    course.title,
+    "delte",
+    canDelete,
+    course.totalStudents,
+    course.status,
+    hasPermission("delete_courses"),
+    isCourseOwner
+  );
 
   const canSubmit =
     isCourseOwner && hasPermission("edit_courses") && course.status === "draft"; // Disponible si draft

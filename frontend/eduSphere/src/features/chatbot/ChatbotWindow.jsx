@@ -21,6 +21,19 @@ export default function ChatbotWindow({ isOpen, onClose }) {
 
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+  const windowRef = useRef(null);
+
+  // Close chatbot on outside click
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (windowRef.current && !windowRef.current.contains(e.target)) {
+        onClose?.();
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [onClose]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -37,29 +50,46 @@ export default function ChatbotWindow({ isOpen, onClose }) {
       timestamp: new Date(),
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    const botMessageId = "bot_" + Date.now();
+
+    const botMessage = {
+      id: botMessageId,
+      content: "",
+      sender: "bot",
+      timestamp: new Date(),
+      isLoading: true,
+    };
+
+    setMessages((prev) => [...prev, userMessage, botMessage]);
     setInput("");
     setIsLoading(true);
 
     try {
-      const res = await ask(text);
-
-      const botMessage = {
-        id: Date.now().toString() + "_bot",
-        content: res.response,
-        sender: "bot",
-        timestamp: new Date(),
-      };
-
-      setMessages((prev) => [...prev, botMessage]);
+      await ask(text, (token) => {
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === botMessageId
+              ? {
+                  ...msg,
+                  content: msg.content + token,
+                  isLoading: false,
+                }
+              : msg
+          )
+        );
+      });
     } catch (error) {
-      const errorMessage = {
-        id: Date.now().toString() + "_error",
-        content: "Une erreur est survenue. Veuillez réessayer.",
-        sender: "bot",
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, errorMessage]);
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === botMessageId
+            ? {
+                ...msg,
+                content: "Une erreur est survenue. Veuillez réessayer.",
+                isLoading: false,
+              }
+            : msg
+        )
+      );
     } finally {
       setIsLoading(false);
     }
@@ -72,7 +102,10 @@ export default function ChatbotWindow({ isOpen, onClose }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed bottom-24 right-6 w-80 md:w-96 h-96 bg-white shadow-xl border rounded-lg flex flex-col">
+    <div
+      ref={windowRef}
+      className="fixed bottom-24 right-6 w-80 md:w-96 h-96 bg-white shadow-xl border rounded-lg flex flex-col z-50"
+    >
       <div className="bg-blue-600 text-white p-4">
         <h3 className="font-medium">Assistant EduSphere</h3>
         <p className="text-sm opacity-90">
@@ -93,14 +126,14 @@ export default function ChatbotWindow({ isOpen, onClose }) {
                 message.sender === "user"
                   ? "bg-blue-600 text-white"
                   : "bg-gray-200 text-gray-900"
-              }`}
+              } ${message.isLoading ? "opacity-60 italic" : ""}`}
             >
               {message.sender === "bot" && (
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-xs font-medium">Assistant</span>
                 </div>
               )}
-              <p className="text-sm">{message.content}</p>
+              <p className="text-sm whitespace-pre-line">{message.content}</p>
               <p className="text-xs opacity-70 mt-1 text-right">
                 {message.timestamp.toLocaleTimeString([], {
                   hour: "2-digit",
@@ -124,7 +157,7 @@ export default function ChatbotWindow({ isOpen, onClose }) {
           disabled={isLoading}
         />
         <Button
-          label={isLoading ? "..." : "Send"}
+          label={isLoading ? "..." : "Envoyer"}
           onClick={handleSendMessage}
           disabled={isLoading || input.trim() === ""}
         />

@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import DropDown from "../../ui/DropDownn";
-import { FaFilter, FaSearch } from "react-icons/fa";
-import FilterButtons from "../../components/FilterButtons";
+import DropDown from "../../ui/DropDown";
+import { FaSearch } from "react-icons/fa";
 import Input from "../../ui/Input";
 import { useSearchParams } from "react-router-dom";
 
@@ -60,7 +59,7 @@ export default function StudentTableOperation() {
               setSearchParams(searchParams);
             }}
           >
-            <DropDown.Button label="Filtrer par" />
+            <DropDown.Button outline label="Trier par" />
             <DropDown.Content>
               <DropDown.Item value="-createdAt">
                 Récemment ajoutés

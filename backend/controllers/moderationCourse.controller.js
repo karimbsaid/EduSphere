@@ -266,8 +266,9 @@ exports.accepteRejetCours = catchAsync(async (req, res, next) => {
 
 exports.submitCourseForApproval = catchAsync(async (req, res, next) => {
   const course = req.course;
+  console.log(course.status);
 
-  if (course.status !== "draft") {
+  if (course.status !== "draft" && course.status !== "rejected") {
     return next(new AppError("Ce cours ne peut pas être soumis", 400));
   }
 

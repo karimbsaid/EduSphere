@@ -1,21 +1,236 @@
-const Course = require("../models/course.models");
+const mongoose = require("mongoose");
 const User = require("../models/user.models");
+const Course = require("../models/course.models");
 const Enrollment = require("../models/enrollment.model");
 const Paiment = require("../models/payment.models");
 const catchAsync = require("../utils/catchAsync");
-const moment = require("moment");
+const factory = require("../controllers/HandleFactory");
+const getDateRange = (period) => {
+  const now = new Date();
+  let startDate;
 
-exports.getRevenueStats = catchAsync(async (req, res, next) => {
-  const userId = req.user._id;
-  const userRole = req.user.role;
-  const groupBy = req.query.groupBy || "month"; // Par défaut, on groupe par mois
-
-  const matchFilter = { paymentStatus: "paid" };
-  if (userRole === "instructor") {
-    matchFilter["course.instructor"] = userId;
+  switch (period) {
+    case "7days":
+      startDate = new Date(now.setDate(now.getDate() - 7));
+      break;
+    case "month":
+      startDate = new Date(now.setMonth(now.getMonth() - 1));
+      break;
+    case "year":
+      startDate = new Date(now.setFullYear(now.getFullYear() - 1));
+      break;
+    default:
+      startDate = new Date(0);
   }
 
-  const revenueData = await Enrollment.aggregate([
+  return { startDate, endDate: new Date() };
+};
+
+// Fonction pour récupérer le nombre d'utilisateurs (pour admins)
+const getUsersStats = async () => {
+  const now = new Date();
+
+  const startDate = new Date(now.setDate(now.getDate() - 7));
+  const endDate = new Date();
+  const totalUsers = await User.countDocuments();
+  const newUsers = await User.countDocuments({
+    createdAt: { $gte: startDate, $lte: endDate },
+  });
+
+  return { totalUsers, newUsers };
+};
+
+// Fonction pour récupérer le nombre de cours créés et nouveaux cours
+const getCoursesStats = async (instructorId) => {
+  const now = new Date();
+
+  const startDate = new Date(now.setDate(now.getDate() - 7));
+  const endDate = new Date();
+  const courseMatch = instructorId ? { instructor: instructorId } : {};
+  const totalCourses = await Course.countDocuments(courseMatch);
+  const newCourses = await Course.countDocuments({
+    ...courseMatch,
+    createdAt: { $gte: startDate, $lte: endDate },
+  });
+
+  return { totalCourses, newCourses };
+};
+
+const getRevenueStats = async (instructorId) => {
+  const now = new Date();
+
+  const startDate = new Date(now.setDate(now.getDate() - 7));
+  const endDate = new Date();
+
+  const paymentPipeline = instructorId
+    ? [
+        {
+          $lookup: {
+            from: "courses",
+            localField: "courseId",
+            foreignField: "_id",
+            as: "course",
+          },
+        },
+        { $unwind: "$course" },
+        {
+          $match: {
+            "course.instructor": new mongoose.Types.ObjectId(instructorId),
+            paymentStatus: "paid",
+          },
+        },
+      ]
+    : [{ $match: { paymentStatus: "paid" } }];
+
+  const totalRevenueResult = await Paiment.aggregate([
+    ...paymentPipeline,
+    { $group: { _id: null, total: { $sum: "$amount" } } },
+  ]);
+  const totalRevenue =
+    totalRevenueResult.length > 0 ? totalRevenueResult[0].total : 0;
+
+  const recentRevenueResult = await Paiment.aggregate([
+    ...paymentPipeline,
+    {
+      $match: {
+        createdAt: { $gte: startDate, $lte: endDate },
+      },
+    },
+    { $group: { _id: null, total: { $sum: "$amount" } } },
+  ]);
+  const recentRevenue =
+    recentRevenueResult.length > 0 ? recentRevenueResult[0].total : 0;
+
+  return { totalRevenue, recentRevenue };
+};
+
+// Fonction pour récupérer le nombre d'inscriptions ou d'étudiants
+const getEnrollmentsStats = async (instructorId) => {
+  const now = new Date();
+
+  const startDate = new Date(now.setDate(now.getDate() - 7));
+  const endDate = new Date();
+  const enrollmentPipeline = instructorId
+    ? [
+        {
+          $lookup: {
+            from: "courses",
+            localField: "courseId",
+            foreignField: "_id",
+            as: "course",
+          },
+        },
+        { $unwind: "$course" },
+        {
+          $match: {
+            "course.instructor": new mongoose.Types.ObjectId(instructorId),
+          },
+        },
+      ]
+    : [];
+
+  const totalEnrollmentsResult = await Enrollment.aggregate([
+    ...enrollmentPipeline,
+    { $group: { _id: null, total: { $sum: 1 } } },
+  ]);
+  const totalEnrollments =
+    totalEnrollmentsResult.length > 0 ? totalEnrollmentsResult[0].total : 0;
+
+  const recentEnrollmentsResult = await Enrollment.aggregate([
+    ...enrollmentPipeline,
+    {
+      $match: {
+        enrolledAt: { $gte: startDate, $lte: endDate },
+      },
+    },
+    { $group: { _id: null, total: { $sum: 1 } } },
+  ]);
+  const recentEnrollments =
+    recentEnrollmentsResult.length > 0 ? recentEnrollmentsResult[0].total : 0;
+
+  return { totalEnrollments, recentEnrollments };
+};
+
+// Fonction pour récupérer les cours actifs (admins) ou en attente (instructeurs)
+const getCoursesStatusStats = async (isAdmin, instructorId) => {
+  if (isAdmin) {
+    return await Course.countDocuments({ status: "published" });
+  } else {
+    return await Course.countDocuments({
+      instructor: instructorId,
+      status: "pending",
+    });
+  }
+};
+
+// Fonction pour récupérer les revenus par mois (pour le graphique)
+// exports.getRevenueByDuration = catchAsync(async (req, res, next) => {
+//   const { instructorId, courseId, startDate, endDate } = req.query;
+
+//   const match = {
+//     paymentStatus: "paid",
+//   };
+
+//   if (instructorId)
+//     match["course.instructor"] = new mongoose.Types.ObjectId(instructorId);
+//   if (courseId) match["course._id"] = new mongoose.Types.ObjectId(courseId);
+
+//   if (startDate || endDate) {
+//     match.createdAt = {};
+//     if (startDate) match.createdAt.$gte = new Date(startDate);
+//     if (endDate) match.createdAt.$lte = new Date(endDate);
+//   }
+//   const pipeline = [
+//     {
+//       $lookup: {
+//         from: "courses",
+//         localField: "courseId",
+//         foreignField: "_id",
+//         as: "course",
+//       },
+//     },
+//     { $unwind: "$course" },
+//     { $match: match },
+//     {
+//       $group: {
+//         _id: { $month: "$createdAt" },
+//         total: { $sum: "$amount" },
+//       },
+//     },
+//     {
+//       $project: {
+//         month: "$_id",
+//         total: 1,
+//         _id: 0,
+//       },
+//     },
+//     { $sort: { month: 1 } },
+//   ];
+
+//   const revenueByDuration = await Paiment.aggregate(pipeline);
+
+//   res.status(201).json({
+//     status: "success",
+//     data: revenueByDuration,
+//   });
+// });
+
+exports.getRevenueByDuration = catchAsync(async (req, res, next) => {
+  const { instructorId = "", courseId = "", startDate, endDate } = req.query;
+  console.log(endDate);
+  console.log(startDate);
+
+  const match = {
+    paymentStatus: "paid",
+  };
+
+  if (startDate || endDate) {
+    match.createdAt = {};
+    if (startDate) match.createdAt.$gte = new Date(startDate);
+    if (endDate) match.createdAt.$lte = new Date(endDate);
+  }
+
+  const pipeline = [
     {
       $lookup: {
         from: "courses",
@@ -25,497 +240,609 @@ exports.getRevenueStats = catchAsync(async (req, res, next) => {
       },
     },
     { $unwind: "$course" },
-    { $match: matchFilter },
-
-    {
-      $group: {
-        _id:
-          groupBy === "month"
-            ? { month: { $month: "$enrolledAt" } }
-            : { course: "$course.title" },
-        revenue: { $sum: "$course.price" },
-        students: { $sum: 1 },
-      },
-    },
-
-    {
-      $project: {
-        _id: 0,
-        name:
-          groupBy === "month"
-            ? {
-                $arrayElemAt: [
-                  [
-                    "Jan",
-                    "Fév",
-                    "Mar",
-                    "Avr",
-                    "Mai",
-                    "Juin",
-                    "Juil",
-                    "Août",
-                    "Sep",
-                    "Oct",
-                    "Nov",
-                    "Déc",
-                  ],
-                  { $subtract: ["$_id.month", 1] },
-                ],
-              }
-            : "$_id.course",
-        revenue: 1,
-        students: 1,
-      },
-    },
-    { $sort: { name: 1 } },
-  ]);
-
-  res.status(200).json({
-    status: "success",
-    data: revenueData,
-  });
-});
-
-exports.getCourseDistribution = catchAsync(async (req, res, next) => {
-  const distribution = await Course.aggregate([
-    {
-      $group: {
-        _id: "$category",
-        count: { $sum: 1 },
-      },
-    },
-    {
-      $sort: { count: -1 },
-    },
-  ]);
-  const formattedData = distribution.map((item) => ({
-    name: item._id,
-    value: item.count,
-  }));
-  res.json(formattedData);
-});
-
-exports.getCourseOnHold = catchAsync(async (req, res, next) => {
-  // 1️⃣ Récupération des cours en "draft" avec leurs sections et lectures
-  const userId = req.user._id;
-  const userRole = req.user.role;
-  let courseFilter = { status: "draft" };
-  if (userRole === "instructor") {
-    courseFilter = { instructor: userId, status: "draft" };
-  }
-  const courses = await Course.find(courseFilter).populate([
-    {
-      path: "sections",
-      populate: {
-        path: "lectures",
-        model: "Lecture",
-      },
-    },
-    {
-      path: "instructor",
-      model: "User",
-    },
-  ]);
-
-  // 2️⃣ Transformation des données avec `await` pour chaque cours
-  const enhancedCourses = await Promise.all(
-    courses.map(async (course) => {
-      const { firstSectionId, firstLectureId } =
-        await course.getFirstSectionAndLecture();
-
-      return {
-        ...course.toObject(), // Conversion en objet JS
-        firstSectionId,
-        firstLectureId,
-      };
-    })
-  );
-
-  res.status(200).json({
-    status: "success",
-    results: enhancedCourses.length,
-    data: {
-      courses: enhancedCourses,
-    },
-  });
-});
-
-const getTopStats = async (type, timeRange) => {
-  let matchStage = {};
-  if (timeRange === "week") {
-    matchStage = { enrolledAt: { $gte: moment().startOf("week").toDate() } };
-  } else if (timeRange === "month") {
-    matchStage = { enrolledAt: { $gte: moment().startOf("month").toDate() } };
-  } else if (timeRange === "year") {
-    matchStage = { enrolledAt: { $gte: moment().startOf("year").toDate() } };
-  }
-
-  const pipeline = [
-    { $match: { paymentStatus: "paid", ...matchStage } }, // Filtrer par paiement et période
-
-    {
-      $group:
-        type === "instructor"
-          ? {
-              _id: "$courseId",
-              totalRevenue: { $sum: "$price" },
-              totalStudents: { $sum: 1 },
-            }
-          : {
-              _id: "$courseId",
-              totalStudents: { $sum: 1 },
-            },
-    },
-
-    {
-      $lookup: {
-        from: "courses",
-        localField: "_id",
-        foreignField: "_id",
-        as: "courseDetails",
-      },
-    },
-    { $unwind: "$courseDetails" },
-
-    {
-      $lookup: {
-        from: "users",
-        localField: "courseDetails.instructor",
-        foreignField: "_id",
-        as: "instructorDetails",
-      },
-    },
-    { $unwind: "$instructorDetails" },
-
-    {
-      $project:
-        type === "instructor"
-          ? {
-              _id: "$instructorDetails._id",
-              name: "$instructorDetails.name",
-              email: "$instructorDetails.email",
-              totalRevenue: 1,
-              totalStudents: 1,
-            }
-          : {
-              _id: "$courseDetails._id",
-              courseName: "$courseDetails.title",
-              instructorName: "$instructorDetails.name",
-              totalStudents: 1,
-            },
-    },
-
-    {
-      $sort:
-        type === "instructor" ? { totalRevenue: -1 } : { totalStudents: -1 },
-    },
-    { $limit: 5 },
+    { $match: match },
   ];
 
-  return await Enrollment.aggregate(pipeline);
-};
-
-const getStartDate = (timeRange) => {
-  const now = moment();
-  switch (timeRange) {
-    case "week":
-      return now.startOf("isoWeek").toDate(); // Start of the current week (Monday)
-    case "month":
-      return now.startOf("month").toDate(); // Start of the current month
-    case "year":
-      return now.startOf("year").toDate(); // Start of the current year
-    default:
-      return null; // No filter (all-time stats)
-  }
-};
-
-exports.getTopInstructors = catchAsync(async (req, res, next) => {
-  const { timeRange } = req.query; // Expected values: "week", "month", "year"
-  const startDate = getStartDate(timeRange);
-
-  let matchStage = { paymentStatus: "paid" }; // Consider only paid enrollments
-
-  if (startDate) {
-    matchStage.enrolledAt = { $gte: startDate };
+  // Appliquer les filtres courseId et instructorId après le $lookup
+  if (instructorId) {
+    pipeline.push({
+      $match: {
+        "course.instructor": new mongoose.Types.ObjectId(instructorId),
+      },
+    });
   }
 
-  const instructors = await Enrollment.aggregate([
-    { $match: matchStage }, // Filter enrollments based on date & payment status
+  if (courseId) {
+    pipeline.push({
+      $match: {
+        "course._id": new mongoose.Types.ObjectId(courseId),
+      },
+    });
+  }
+
+  // Déterminer la granularité
+  let groupFormat = "%Y-%m"; // Par défaut : par mois
+
+  if (startDate && endDate) {
+    const diffInDays =
+      (new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24);
+
+    if (diffInDays <= 31) {
+      groupFormat = "%Y-%m-%d"; // Regroupement par jour
+    } else if (diffInDays <= 90) {
+      groupFormat = "%Y-%U"; // Regroupement par semaine (numéro de semaine)
+    } else {
+      groupFormat = "%Y-%m"; // Regroupement par mois
+    }
+  }
+
+  pipeline.push(
+    {
+      $group: {
+        _id: {
+          $dateToString: { format: groupFormat, date: "$createdAt" },
+        },
+        total: { $sum: "$amount" },
+      },
+    },
+    {
+      $project: {
+        date: "$_id",
+        total: 1,
+        _id: 0,
+      },
+    },
+    { $sort: { date: 1 } }
+  );
+
+  const revenueByDuration = await Paiment.aggregate(pipeline);
+
+  res.status(200).json({
+    status: "success",
+    data: revenueByDuration,
+  });
+});
+
+// Fonction pour récupérer les données des cours (revenus pour admins, étudiants pour instructeurs)
+
+exports.getStudentsByCourse = catchAsync(async (req, res, next) => {
+  const user = req.user;
+
+  const pipeline = [
     {
       $lookup: {
         from: "courses",
         localField: "courseId",
         foreignField: "_id",
-        as: "courseDetails",
+        as: "course",
       },
     },
-    { $unwind: "$courseDetails" },
-
+    { $unwind: "$course" },
+    {
+      $match: {
+        "course.instructor": user._id,
+      },
+    },
     {
       $group: {
-        _id: "$courseDetails.instructor",
-        totalRevenue: {
-          $sum: {
-            $multiply: ["$courseDetails.price", "$courseDetails.totalStudent"],
-          },
-        },
-        totalStudents: { $sum: "$courseDetails.totalStudent" },
-        courseCount: { $addToSet: "$courseId" },
+        _id: "$course._id",
+        name: { $first: "$course.title" },
+        value: { $sum: 1 },
       },
     },
-    { $set: { courseCount: { $size: "$courseCount" } } },
-    { $sort: { totalRevenue: -1 } },
-    { $limit: 5 },
-
-    {
-      $lookup: {
-        from: "users",
-        localField: "_id",
-        foreignField: "_id",
-        as: "instructorDetails",
-      },
-    },
-    { $unwind: "$instructorDetails" },
-    {
-      $project: {
-        _id: 1,
-        name: "$instructorDetails.name",
-        email: "$instructorDetails.email",
-        totalRevenue: 1,
-        totalStudents: 1,
-        courseCount: 1,
-      },
-    },
-  ]);
-
-  res.status(200).json({
-    status: "success",
-    results: instructors.length,
-    data: {
-      instructors,
-    },
-  });
-});
-
-exports.getPopularCourses = catchAsync(async (req, res, next) => {
-  const courses = await Enrollment.aggregate([
-    // 1️⃣ Filtrer uniquement les inscriptions payées
-    { $match: { paymentStatus: "paid" } },
-
-    // 2️⃣ Regrouper par `courseId` et compter le nombre d'inscriptions
-    {
-      $group: {
-        _id: "$courseId",
-        totalStudents: { $sum: 1 },
-      },
-    },
-
-    // 3️⃣ Joindre avec `Course` pour récupérer les détails du cours
-    {
-      $lookup: {
-        from: "courses",
-        localField: "_id",
-        foreignField: "_id",
-        as: "courseDetails",
-      },
-    },
-    { $unwind: "$courseDetails" },
-
-    // 4️⃣ Joindre avec `User` pour récupérer les détails de l'instructeur
-    {
-      $lookup: {
-        from: "users",
-        localField: "courseDetails.instructor",
-        foreignField: "_id",
-        as: "instructorDetails",
-      },
-    },
-    { $unwind: "$instructorDetails" },
-
-    // 5️⃣ Sélectionner uniquement les champs nécessaires
     {
       $project: {
         _id: 0,
-        courseName: "$courseDetails.title",
-        instructorName: "$instructorDetails.name",
-        totalStudents: 1,
+        name: 1, // for Recharts X-axis
+        value: 1, // for Recharts Y-axis
       },
     },
+  ];
 
-    // 6️⃣ Trier par nombre d'étudiants décroissant (du plus populaire au moins populaire)
-    { $sort: { totalStudents: -1 } },
+  const studentByCourse = await Enrollment.aggregate(pipeline);
 
-    // 7️⃣ Limiter aux 5 cours les plus populaires
-    { $limit: 5 },
-  ]);
+  res.status(200).json({
+    status: "success",
+    results: studentByCourse.length,
+    studentByCourse,
+  });
+});
+
+exports.getStudentsByCategory = catchAsync(async (req, res, next) => {
+  const pipeline = [
+    {
+      $lookup: {
+        from: "courses",
+        foreignField: "_id",
+        localField: "courseId",
+        as: "course",
+      },
+    },
+    { $unwind: "$course" },
+    {
+      $group: {
+        _id: "$course.category",
+        value: { $sum: 1 },
+      },
+    },
+    {
+      $project: {
+        _id: 0,
+        name: "$_id", // for Recharts X-axis
+        value: 1, // for Recharts Y-axis
+      },
+    },
+  ];
+
+  const studentsByCategory = await Enrollment.aggregate(pipeline);
+  res.status(200).json({ studentsByCategory });
+});
+
+exports.getCoursesByCategories = catchAsync(async (req, res, next) => {
+  const pipeline = [
+    {
+      $group: {
+        _id: "$category",
+        value: { $sum: 1 },
+      },
+    },
+    {
+      $project: {
+        _id: 0,
+        name: "$_id",
+        value: 1,
+      },
+    },
+  ];
+
+  const coursesByCategories = await Course.aggregate(pipeline);
+  res.status(201).json({ coursesByCategories });
+});
+
+const getCourseStats = async (isAdmin, instructorId) => {
+  if (isAdmin) {
+    const revenueByCourse = await Paiment.aggregate([
+      { $match: { paymentStatus: "paid" } },
+      {
+        $group: {
+          _id: "$courseId",
+          totalRevenue: { $sum: "$amount" },
+        },
+      },
+      {
+        $lookup: {
+          from: "courses",
+          localField: "_id",
+          foreignField: "_id",
+          as: "course",
+        },
+      },
+      { $unwind: "$course" },
+      {
+        $project: {
+          courseTitle: "$course.title",
+          totalRevenue: 1,
+        },
+      },
+    ]);
+
+    const studentsByCourse = await Enrollment.aggregate([
+      {
+        $group: {
+          _id: "$courseId",
+          totalStudents: { $sum: 1 },
+        },
+      },
+      {
+        $lookup: {
+          from: "courses",
+          localField: "_id",
+          foreignField: "_id",
+          as: "course",
+        },
+      },
+      { $unwind: "$course" },
+      {
+        $project: {
+          courseTitle: "$course.title",
+          totalStudents: 1,
+        },
+      },
+    ]);
+
+    return revenueByCourse.map((course) => {
+      const studentData = studentsByCourse.find(
+        (s) => s.courseTitle === course.courseTitle
+      ) || {
+        totalStudents: 0,
+      };
+      return {
+        courseTitle: course.courseTitle,
+        totalRevenue: course.totalRevenue,
+        totalStudents: studentData.totalStudents,
+      };
+    });
+  } else {
+    return await Enrollment.aggregate([
+      {
+        $lookup: {
+          from: "courses",
+          localField: "courseId",
+          foreignField: "_id",
+          as: "course",
+        },
+      },
+      { $unwind: "$course" },
+      {
+        $match: {
+          "course.instructor": new mongoose.Types.ObjectId(instructorId),
+        },
+      },
+      {
+        $group: {
+          _id: {
+            courseId: "$courseId",
+            title: "$course.title",
+          },
+          totalStudents: { $sum: 1 },
+        },
+      },
+      {
+        $project: {
+          courseTitle: "$_id.title",
+          totalStudents: 1,
+          _id: 0,
+        },
+      },
+    ]);
+  }
+};
+
+exports.getRecentUsers = (req, res, next) => {
+  req.query.sort = "-createdAt";
+  req.query.limit = "3";
+  req.query.fields = "name,createdAt";
+  next();
+};
+exports.getRecentUserHandler = factory.getAll(User);
+
+exports.getRecentPendingCourses = catchAsync(async (req, res, next) => {
+  console.log(req.user);
+  // Construire le filtre en fonction du rôle
+  const filter = { status: "pending" };
+
+  if (req.user.role.name === "Instructor") {
+    filter.instructor = req.user._id;
+  }
+
+  // Requête Mongoose
+  const courses = await Course.find(filter).sort({ createdAt: -1 });
 
   res.status(200).json({
     status: "success",
     results: courses.length,
     data: {
-      courses,
+      data: courses,
     },
   });
 });
+exports.getRecentEnrollmentsForInstructor = catchAsync(
+  async (req, res, next) => {
+    const isAdmin = req.user.role?.name === "Admin";
+    const userId = req.user._id;
 
-exports.getCompletionRateByCategory = catchAsync(async (req, res, next) => {
-  const completionRates = await Enrollment.aggregate([
-    {
-      $lookup: {
-        from: "courses", // Association avec Course
-        localField: "courseId",
-        foreignField: "_id",
-        as: "course",
+    const matchStage = isAdmin
+      ? {} // pas de filtre si admin
+      : { "course.instructor": new mongoose.Types.ObjectId(userId) }; // filtre si instructeur
+
+    const recentEnrollments = await Enrollment.aggregate([
+      {
+        $lookup: {
+          from: "courses",
+          localField: "courseId",
+          foreignField: "_id",
+          as: "course",
+        },
       },
-    },
-    { $unwind: "$course" }, // Décompresser le tableau course
-    {
-      $lookup: {
-        from: "progresses", // Association avec Progress
-        localField: "progress",
-        foreignField: "_id",
-        as: "progress",
+      { $unwind: "$course" },
+
+      {
+        $lookup: {
+          from: "users",
+          localField: "studentId",
+          foreignField: "_id",
+          as: "student",
+        },
       },
-    },
-    { $unwind: "$progress" }, // Décompresser le tableau progress
+      { $unwind: "$student" },
+
+      {
+        $match: matchStage,
+      },
+      {
+        $sort: { enrolledAt: -1 },
+      },
+      { $limit: 3 },
+      {
+        $project: {
+          courseTitle: "$course.title",
+          studentName: "$student.name",
+          enrolledAt: 1,
+        },
+      },
+    ]);
+
+    res.status(200).json({
+      status: "success",
+      results: recentEnrollments.length,
+      recentEnrollments,
+    });
+  }
+);
+
+// Fonction pour récupérer l'activité récente
+// const getRecentActivity = async (isAdmin, instructorId) => {
+//   if (isAdmin) {
+//     const recentUsers = await User.find()
+//       .sort({ createdAt: -1 })
+//       .limit(3)
+//       .select("name createdAt");
+//     const recentEnrollmentActivities = await Enrollment.find()
+//       .sort({ enrolledAt: -1 })
+//       .limit(3)
+//       .populate("courseId", "title")
+//       .select("courseId enrolledAt");
+//     const recentCourses = await Course.find({ status: "pending" })
+//       .sort({ createdAt: -1 })
+//       .limit(3)
+//       .select("title createdAt");
+
+//     return [
+//       ...recentUsers.map((user) => ({
+//         message: `Nouvel utilisateur inscrit : ${user.name}`,
+//         time: user.createdAt.toLocaleTimeString("fr-FR", {
+//           hour: "2-digit",
+//           minute: "2-digit",
+//         }),
+//       })),
+//       ...recentEnrollmentActivities.map((enrollment) => ({
+//         message: `Inscription au cours : ${enrollment?.courseId?.title}`,
+//         time: enrollment.enrolledAt.toLocaleTimeString("fr-FR", {
+//           hour: "2-digit",
+//           minute: "2-digit",
+//         }),
+//       })),
+//       ...recentCourses.map((course) => ({
+//         message: `Cours soumis pour approbation : ${course.title}`,
+//         time: course.createdAt.toLocaleTimeString("fr-FR", {
+//           hour: "2-digit",
+//           minute: "2-digit",
+//         }),
+//       })),
+//     ]
+//       .sort((a, b) => new Date(b.time) - new Date(a.time))
+//       .slice(0, 5);
+//   } else {
+//     const recentEnrollments = await Enrollment.find()
+//       .populate({
+//         path: "courseId",
+//         match: { instructor: instructorId },
+//         select: "title",
+//       })
+//       .sort({ enrolledAt: -1 })
+//       .limit(3)
+//       .select("courseId enrolledAt");
+
+//     const recentCourses = await Course.find({
+//       instructor: instructorId,
+//       status: "pending",
+//     })
+//       .sort({ createdAt: -1 })
+//       .limit(3)
+//       .select("title createdAt");
+
+//     return [
+//       ...recentEnrollments
+//         .filter((enrollment) => enrollment.courseId)
+//         .map((enrollment) => ({
+//           message: `Nouvel étudiant inscrit au cours : ${enrollment.courseId.title}`,
+//           time: enrollment.enrolledAt.toLocaleTimeString("fr-FR", {
+//             hour: "2-digit",
+//             minute: "2-digit",
+//           }),
+//         })),
+//       ...recentCourses.map((course) => ({
+//         message: `Cours soumis pour approbation : ${course.title}`,
+//         time: course.createdAt.toLocaleTimeString("fr-FR", {
+//           hour: "2-digit",
+//           minute: "2-digit",
+//         }),
+//       })),
+//     ]
+//       .sort((a, b) => new Date(b.time) - new Date(a.time))
+//       .slice(0, 5);
+//   }
+// };
+
+// Contrôleur unifié pour les statistiques (admins et instructeurs)
+
+exports.getStats = async (req, res) => {
+  try {
+    const user = req.user;
+
+    const isAdmin = user.role.name === "Admin";
+    const instructorId = isAdmin ? null : user._id;
+
+    const usersStats = isAdmin
+      ? await getUsersStats()
+      : { totalUsers: 0, newUsers: 0 };
+    const { totalCourses, newCourses } = await getCoursesStats(instructorId);
+    const { totalRevenue, recentRevenue } = await getRevenueStats(instructorId);
+    const { totalEnrollments, recentEnrollments } = await getEnrollmentsStats(
+      instructorId
+    );
+    const totalCoursesActiveOrPending = await getCoursesStatusStats(
+      isAdmin,
+      instructorId
+    );
+
+    // Réponse finale
+    res.status(200).json({
+      status: "success",
+      data: {
+        stats: {
+          ...(isAdmin && {
+            totalUsers: usersStats.totalUsers,
+            newUsers: usersStats.newUsers,
+          }),
+          totalCourses,
+          newCourses,
+          totalRevenue,
+          recentRevenue,
+          totalEnrollments: isAdmin ? totalEnrollments : undefined,
+          recentEnrollments,
+          totalStudents: isAdmin ? undefined : totalEnrollments,
+          newStudents: isAdmin ? undefined : recentEnrollments,
+          totalCoursesActive: isAdmin ? totalCoursesActiveOrPending : undefined,
+          pendingCourses: isAdmin ? undefined : totalCoursesActiveOrPending,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Erreur dans getStats :", error);
+    res.status(500).json({
+      status: "error",
+      message: "Erreur lors de la récupération des statistiques",
+      error: error.message || "Erreur inconnue",
+    });
+  }
+};
+
+// exports.getStats = async (req, res) => {
+//   try {
+//     const { period = "month" } = req.query; // Par défaut : dernier mois
+//     const { courseId, startDate: customStart, endDate: customEnd } = req.body;
+
+//     const user = req.user;
+
+//     if (!user) {
+//       return res.status(401).json({
+//         status: "error",
+//         message: "Utilisateur non authentifié",
+//       });
+//     }
+
+//     const isAdmin = user.role.name === "Admin";
+//     const instructorId = isAdmin ? null : user._id;
+//     let startDate, endDate;
+//     if (customStart && customEnd) {
+//       startDate = new Date(customStart);
+//       endDate = new Date(customEnd);
+//     } else {
+//       ({ startDate, endDate } = getDateRange(period));
+//     }
+//     console.log(startDate, endDate, period);
+//     // Récupérer toutes les statistiques et données via les fonctions
+//     const usersStats = isAdmin
+//       ? await getUsersStats(startDate, endDate)
+//       : { totalUsers: 0, newUsers: 0 };
+//     const { totalCourses, newCourses } = await getCoursesStats(
+//       instructorId,
+//       startDate,
+//       endDate
+//     );
+//     const { totalRevenue, recentRevenue } = await getRevenueStats(
+//       instructorId,
+//       startDate,
+//       endDate
+//     );
+//     const { totalEnrollments, recentEnrollments } = await getEnrollmentsStats(
+//       instructorId,
+//       startDate,
+//       endDate
+//     );
+//     const totalCoursesActiveOrPending = await getCoursesStatusStats(
+//       isAdmin,
+//       instructorId
+//     );
+//     const revenueByMonth = await getRevenueByDuration(
+//       instructorId,
+//       courseId,
+//       startDate,
+//       endDate
+//     );
+//     const courseStats = await getCourseStats(isAdmin, instructorId);
+//     const recentActivity = await getRecentActivity(isAdmin, instructorId);
+
+//     // Réponse finale
+//     res.status(200).json({
+//       status: "success",
+//       data: {
+//         stats: {
+//           ...(isAdmin && {
+//             totalUsers: usersStats.totalUsers,
+//             newUsers: usersStats.newUsers,
+//           }),
+//           totalCourses,
+//           newCourses,
+//           totalRevenue,
+//           recentRevenue,
+//           totalEnrollments: isAdmin ? totalEnrollments : undefined,
+//           recentEnrollments,
+//           totalStudents: isAdmin ? undefined : totalEnrollments,
+//           newStudents: isAdmin ? undefined : recentEnrollments,
+//           totalCoursesActive: isAdmin ? totalCoursesActiveOrPending : undefined,
+//           pendingCourses: isAdmin ? undefined : totalCoursesActiveOrPending,
+//         },
+//         charts: {
+//           revenueByMonth,
+//           ...(isAdmin
+//             ? { revenueByCourse: courseStats }
+//             : { studentsByCourse: courseStats }),
+//         },
+//         recentActivity,
+//       },
+//     });
+//   } catch (error) {
+//     console.error("Erreur dans getStats :", error);
+//     res.status(500).json({
+//       status: "error",
+//       message: "Erreur lors de la récupération des statistiques",
+//       error: error.message || "Erreur inconnue",
+//     });
+//   }
+// };
+
+exports.getGlobalStats = catchAsync(async (req, res) => {
+  const totalCourses = await Course.countDocuments();
+
+  const coursesByCategory = await Course.aggregate([
     {
       $group: {
-        _id: "$course.category",
+        _id: "$category",
         totalCourses: { $sum: 1 },
-        completedCourses: {
-          $sum: {
-            $cond: [{ $eq: ["$progress.progressPercentage", 100] }, 1, 0],
-          },
-        },
       },
     },
-    {
-      $project: {
-        _id: 0,
-        category: "$_id",
-        completionRate: {
-          $multiply: [{ $divide: ["$completedCourses", "$totalCourses"] }, 100],
-        },
-      },
-    },
-    { $sort: { completionRate: -1 } }, // Trier par taux de complétion décroissant
   ]);
 
-  res.status(200).json({
-    status: "success",
-    results: completionRates.length,
-    data: {
-      completionRates,
-    },
-  });
-});
+  const instructorRole = await Role.findOne({ name: "Instructor" });
+  const studentRole = await Role.findOne({ name: "student" });
 
-exports.getTotalUsers = catchAsync(async (req, res, next) => {
-  const userId = req.user._id;
-  const userRole = req.user.role;
+  const totalInstructors = instructorRole
+    ? await User.countDocuments({ role: instructorRole._id })
+    : 0;
 
-  let courseFilter = {};
-  if (userRole === "instructor") {
-    courseFilter = { instructor: userId };
-  }
-
-  let courseIds = [];
-  if (userRole === "instructor") {
-    const courses = await Course.find(courseFilter).select("_id");
-    courseIds = courses.map((course) => course._id);
-  }
-
-  const enrollmentFilter =
-    userRole === "admin" ? {} : { courseId: { $in: courseIds } };
-
-  // Calcul du total des étudiants inscrits
-  const totalUserResult = await Enrollment.aggregate([
-    { $match: enrollmentFilter },
-    { $group: { _id: null, count: { $sum: 1 } } },
-  ]);
-  const totalUser = totalUserResult.length > 0 ? totalUserResult[0].count : 0;
-
-  // Calcul de la semaine en cours (Lundi - Dimanche)
-  const today = new Date();
-  const firstDayOfWeek = new Date(today);
-  firstDayOfWeek.setDate(today.getDate() - today.getDay() + 1); // Lundi
-  firstDayOfWeek.setHours(0, 0, 0, 0);
-
-  const lastDayOfWeek = new Date(today);
-  lastDayOfWeek.setDate(today.getDate() - today.getDay() + 7); // Dimanche
-  lastDayOfWeek.setHours(23, 59, 59, 999);
-
-  // Calcul des étudiants inscrits cette semaine
-  const weeklyUserResult = await Enrollment.aggregate([
-    {
-      $match: {
-        ...enrollmentFilter,
-        enrolledAt: { $gte: firstDayOfWeek, $lte: lastDayOfWeek },
-      },
-    },
-    { $group: { _id: null, count: { $sum: 1 } } },
-  ]);
-  const weeklyUser =
-    weeklyUserResult.length > 0 ? weeklyUserResult[0].count : 0;
+  const totalStudents = studentRole
+    ? await User.countDocuments({ role: studentRole._id })
+    : 0;
 
   res.status(200).json({
     status: "success",
     data: {
-      totalUser,
-      weeklyUser,
+      totalCourses,
+      coursesByCategory,
+      totalInstructors,
+      totalStudents,
     },
-  });
-});
-
-exports.getTotalRevenue = catchAsync(async (req, res, next) => {
-  const userId = req.user._id;
-  const userRole = req.user.role;
-  let courseFilter = {};
-  if (userRole === "instructor") {
-    courseFilter = { instructor: userId };
-  }
-  const courses = await Course.find(courseFilter).select(
-    "title revenu price totalStudent"
-  );
-  const totalRevenue = courses.reduce((sum, course) => sum + course.revenu, 0);
-  const courseIds = courses.map((course) => course._id);
-  const today = new Date();
-  const firstDayOfWeek = new Date(
-    today.setDate(today.getDate() - today.getDay() + 1)
-  ); // Lundi
-  const lastDayOfWeek = new Date(
-    today.setDate(today.getDate() - today.getDay() + 7)
-  ); // Dimanche
-
-  firstDayOfWeek.setHours(0, 0, 0, 0);
-  lastDayOfWeek.setHours(23, 59, 59, 999);
-  const weeklyRevenue = await Paiment.aggregate([
-    {
-      $match: {
-        paymentStatus: "paid",
-        courseId: { $in: courseIds },
-        updatedAt: { $gte: firstDayOfWeek, $lte: lastDayOfWeek },
-      },
-    },
-    {
-      $lookup: {
-        from: "courses",
-        localField: "courseId",
-        foreignField: "_id",
-        as: "course",
-      },
-    },
-    { $unwind: "$course" },
-    {
-      $group: {
-        _id: null,
-        weeklyRevenue: { $sum: "$course.price" },
-      },
-    },
-  ]);
-
-  res.json({
-    totalRevenue,
-    weeklyRevenue,
   });
 });

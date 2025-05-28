@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import CourseFilter from "../features/course/CourseFilter";
 import { getAllcourse } from "../services/apiCourse";
 import CourseCard from "../components/CourseCard";
-import DropDown from "../ui/DropDownn";
+import DropDown from "../ui/DropDown";
 import { useAuth } from "../context/authContext";
 export default function CoursesPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -96,7 +96,6 @@ export default function CoursesPage() {
 
         const { status, data } = await getAllcourse(query, token || null);
         if (status === "success") {
-          // console.log(response.courses);
           setCourses(data.data);
         }
       } catch (error) {

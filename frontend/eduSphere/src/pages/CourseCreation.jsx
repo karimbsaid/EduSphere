@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from "react";
-import { HiChevronRight, HiChevronLeft } from "react-icons/hi2";
+import { HiChevronRight, HiChevronLeft, HiArrowLeft } from "react-icons/hi2";
 import CourseDetailsForm from "../features/course/courseCreation/CourseDetailsForm";
 import CourseCurriculum from "../features/course/courseCreation/CourseCurriculum";
 import CoursePricing from "../features/course/courseCreation/CoursePricing";
@@ -16,14 +16,18 @@ import {
   addResource,
   updateResource,
   getCourseDetailEdit,
+  deleteRessource,
+  createFullCourse,
 } from "../services/apiCourse";
 import toast from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
 import CourseResources from "../features/course/courseCreation/CourseResources";
 import { useAuth } from "../context/authContext";
-import { storeDocuments } from "../services/apiSplitter";
+import { splitPdfFile, storeDocuments } from "../services/apiSplitter";
 import Spinner from "../ui/Spinner";
 import { CourseContext } from "../context/courseContext";
+import Button from "../ui/Button";
+import Breadcrumb from "../components/Breadcrumb";
 const steps = [
   "Course Details",
   "Curriculum",
@@ -166,41 +170,47 @@ export default function CourseCreation() {
       setLoading(false);
     }
   };
+  const handleStoreDocumentAssistant = async () => {
+    const splittable = state.resources.filter(
+      (res) => res.isSpliter && !res.isNew
+    );
+    if (splittable.length === 0) return;
+
+    try {
+      for (const res of splittable) {
+        await splitPdfFile(res);
+      }
+    } catch (error) {
+      console.error("Auto-split failed:", error);
+    }
+  };
 
   const handleCreateCourse = async () => {
     try {
-      const course = await createCourse(state, token);
+      const course = await createFullCourse(state, token);
 
-      for (const sec of state.sections) {
-        const sectionRes = await createSection(
-          token,
-          course.data._id,
-          sec.title
-        );
+      // for (const sec of state.sections) {
+      //   const sectionRes = await createSection(
+      //     token,
+      //     course.data._id,
+      //     sec.title
+      //   );
 
-        for (const content of sec.lectures) {
-          const lectureResponse = await uploadLecture(
-            token,
-            course.data._id,
-            sectionRes.data._id,
-            content
-          );
-        }
-      }
-      if (state.resources.length > 0) {
-        for (const res of state.resources) {
-          const resourceLabel = `Création de resource ${res.title}`;
-          const response = await addResource(
-            course.data._id,
-            res,
-            course.data.title,
-            token
-          );
-        }
-      }
-      if (state.faq.length > 0) {
-        const response = await storeDocuments(state.faq);
-      }
+      //   for (const content of sec.lectures) {
+      //     await uploadLecture(
+      //       token,
+      //       course.data._id,
+      //       sectionRes.data._id,
+      //       content
+      //     );
+      //   }
+      // }
+      // if (state.resources.length > 0) {
+      //   for (const res of state.resources) {
+      //     await addResource(course.data._id, res, course.data.title, token);
+      //   }
+      // }
+      // handleStoreDocumentAssistant();
       toast.success("Cours créé avec succès !");
       navigate(`/course/${course.data._id}/preview`);
     } catch (err) {
@@ -252,17 +262,17 @@ export default function CourseCreation() {
         }
       }
       for (const res of state.resources) {
-        console.log(res);
         if (res.isNew) {
-          const resourceData = await addResource(courseId, res, token);
+          await addResource(courseId, res, token);
         }
         if (res.updated) {
           await updateResource(res._id, res, token);
         }
+        if (res.deleted) {
+          await deleteRessource(res._id, token);
+        }
       }
-      if (state.faq) {
-        const response = await storeDocuments(state.faq);
-      }
+      handleStoreDocumentAssistant();
     } catch (error) {
       console.error("Erreur lors de la mise à jour :", error);
     }
@@ -270,6 +280,14 @@ export default function CourseCreation() {
 
   return (
     <div className="mx-5 w-full  p-12 bg-white shadow-lg rounded-lg">
+      <Breadcrumb
+        items={[
+          { label: "Dashboard", path: "/dashboard" },
+          { label: "Courses", path: "/dashboard/courses" },
+          { label: "Create" }, // Pas de path => élément actif non cliquable
+        ]}
+      />
+
       <h1 className="mb-8 text-3xl font-bold">Create a New Course</h1>
       <div className="mb-8 flex flex-wrap justify-center md:justify-between space-x-2">
         {steps.map((step, index) => (
@@ -308,29 +326,22 @@ export default function CourseCreation() {
       {currentStep === 2 && <CourseResources />}
 
       {currentStep === 3 && <CoursePricing />}
-      {currentStep === 4 && <CoursePreview courseData={state} />}
+      {currentStep === 4 && <CoursePreview isPreview courseData={state} />}
 
       <div className="mt-8 flex justify-between">
-        <button
+        <Button
           onClick={handlePrev}
-          disabled={currentStep === 0}
-          className={`flex items-center px-6 py-2 rounded-lg font-medium ${
-            currentStep === 0
-              ? "bg-gray-400 text-white cursor-not-allowed"
-              : "bg-black text-white hover:bg-gray-800"
-          }`}
+          disabled={currentStep === 0 || isLoading}
+          variant="simple"
         >
           <HiChevronLeft className="mr-2 h-4 w-4" />
-          Previous
-        </button>
-        <button
+          <span>Previous</span>
+        </Button>
+
+        <Button
+          variant="simple"
           onClick={handleNext}
           disabled={!isValid() || isLoading}
-          className={`flex items-center px-6 py-2 rounded-lg font-medium  bg-black text-white hover:bg-gray-800 ${
-            !isValid() || isLoading
-              ? "bg-gray-400 text-white cursor-not-allowed"
-              : "bg-black"
-          }`}
         >
           {isLoading ? (
             <div className="flex items-center">
@@ -346,7 +357,7 @@ export default function CourseCreation() {
           )}
 
           <HiChevronRight className="ml-2 h-4 w-4" />
-        </button>
+        </Button>
       </div>
     </div>
   );

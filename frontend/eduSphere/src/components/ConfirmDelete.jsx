@@ -18,7 +18,9 @@ export default function ConfirmDelete({
       <p className="text-sm text-gray-700">
         Pour confirmer la suppression veuillez saisir exactement :
         <br />
-        <code className="text-red-600 font-semibold">{confirmationText}</code>
+        <code className="text-red-600 font-semibold ">
+          ` {confirmationText} `
+        </code>
       </p>
 
       <Input
@@ -30,10 +32,10 @@ export default function ConfirmDelete({
       />
 
       <div className="flex justify-between gap-3">
-        <Button label="Annuler" variant="ghost" onClick={onClose} />
+        <Button label="Annuler" variant="simple" outline onClick={onClose} />
         <Button
           label="Confirmer la suppression"
-          variant="warning"
+          variant="ghost"
           disabled={!isValid}
           onClick={() => {
             onConfirm();

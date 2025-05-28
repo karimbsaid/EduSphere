@@ -76,7 +76,9 @@ export default function TagInput({
 
   return (
     <div className={`space-y-2 w-full ${className}`}>
-      {label && <label className="font-medium">{label}</label>}
+      {label && (
+        <label className="text-gray-700 font-medium text-sm ">{label}</label>
+      )}
       <div
         className="flex flex-wrap gap-2 p-2 border rounded-md min-h-10"
         onClick={() => inputRef.current?.focus()}

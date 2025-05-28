@@ -1,31 +1,28 @@
 /* eslint-disable react/prop-types */
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import Input from "../../ui/Input";
-import DropDown from "../../ui/DropDownn";
+import DropDown from "../../ui/DropDown";
 import Button from "../../ui/Button";
 import { deepDiff } from "../../utils/hasChanged";
 import { addUser, editUser } from "../../services/apiProfile";
 import { useAuth } from "../../context/authContext";
-const roles = [
-  { value: "admin", label: "Admin" },
-  { value: "instructor", label: "Instructor" },
-  { value: "student", label: "Student" },
-];
-
-// const permissionsList = [
-//   "createCourse",
-//   "editCourse",
-//   "deleteCourse",
-//   "addUser",
-//   "editUser",
-//   "deleteUser",
-//   "enrollCourse",
-// ];
+import { getAllRoles } from "../../services/apiRole";
+import { useSearchParams } from "react-router-dom";
 
 export default function UserForm({ user = {}, onClose }) {
+  const [roles, setRoles] = useState([]);
+  const [searchParams, setSearchParams] = useSearchParams();
+
   const { user: authentifiedUser } = useAuth();
   const { token } = authentifiedUser;
+  const getRoles = async () => {
+    const reponse = await getAllRoles(token);
+    setRoles(reponse.data.data);
+  };
+  useEffect(() => {
+    getRoles();
+  }, []);
   const { _id, ...other } = user;
   const isEdit = !!_id;
 
@@ -37,7 +34,7 @@ export default function UserForm({ user = {}, onClose }) {
           blockReason: user.blockReason ?? "",
         }
       : {
-          role: "admin",
+          role: "Admin",
           name: "",
           email: "",
           password: "changeme",
@@ -62,12 +59,12 @@ export default function UserForm({ user = {}, onClose }) {
   // };
 
   const onFormSubmit = async (data) => {
+    console.log("on form submit");
     if (isEdit) {
-      const changedFields = deepDiff(other, data);
+      // const changedFields = deepDiff(other, data);
       try {
-        const updatedUser = await editUser(token, { _id, ...changedFields });
+        const updatedUser = await editUser(token, { _id, ...data });
         console.log(updatedUser);
-        console.log("Utilisateur mis à jour:", updatedUser);
       } catch (err) {
         console.error("Erreur de mise à jour :", err);
       }
@@ -79,6 +76,10 @@ export default function UserForm({ user = {}, onClose }) {
         console.error("Erreur de mise à jour :", err);
       }
     }
+    searchParams.set("page", 1);
+    setSearchParams(searchParams);
+
+    onClose();
   };
 
   return (
@@ -128,71 +129,16 @@ export default function UserForm({ user = {}, onClose }) {
           value={watch("role")}
           onValueChange={(val) => setValue("role", val)}
         >
-          <DropDown.Button label="Choisir un rôle" />
+          <DropDown.Button showSelectedValue label="Choisir un rôle" />
           <DropDown.Content>
             {roles.map((role) => (
-              <DropDown.Item key={role.value} value={role.value}>
-                {role.label}
+              <DropDown.Item key={role._id} value={role._id}>
+                {role.name}
               </DropDown.Item>
             ))}
           </DropDown.Content>
         </DropDown>
       </div>
-      {isEdit && (
-        <div className="mt-4">
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              className="form-checkbox text-red-600"
-              {...register("status")}
-              onChange={(e) =>
-                setValue("status", e.target.checked ? "blocked" : "active")
-              }
-              checked={watch("status") === "blocked"}
-            />
-            <span className="text-red-600 font-medium">
-              Bloquer cet utilisateur
-            </span>
-          </label>
-
-          {watch("status") === "blocked" && (
-            <div className="mt-2">
-              <Input
-                label="Raison du blocage"
-                placeholder="Indiquer la raison du blocage"
-                {...register("blockReason", {
-                  required: watch("status") === "blocked",
-                })}
-              />
-              {errors.blockReason && (
-                <p className="text-red-600 text-sm">
-                  Ce champ est requis si l'utilisateur est bloqué
-                </p>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* <div>
-        <label className="block text-gray-700 font-medium mb-1">
-          Permissions
-        </label>
-        <div className="flex flex-wrap gap-3">
-          {permissionsList.map((perm) => (
-            <label key={perm} className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={selectedPermissions?.includes(perm)}
-                onChange={() => handlePermissionChange(perm)}
-                className="form-checkbox text-blue-600"
-              />
-
-              <span className="capitalize">{perm}</span>
-            </label>
-          ))}
-        </div>
-      </div> */}
 
       <div className="flex justify-between mt-5">
         <Button
@@ -201,6 +147,7 @@ export default function UserForm({ user = {}, onClose }) {
           onClick={onClose}
         />
         <Button
+          type="submit"
           label={isEdit ? "Mettre à jour" : "Créer"}
           className="bg-blue-600 text-white"
         />

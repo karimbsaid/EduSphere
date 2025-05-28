@@ -35,7 +35,7 @@ export default function CoursePricing() {
             <input
               id="price"
               type="number"
-              value={state.price || 0}
+              value={state.price}
               onChange={(e) => handleCourseDataChange("price", e.target.value)}
               placeholder="0.00"
               className={`w-full pl-8 pr-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${

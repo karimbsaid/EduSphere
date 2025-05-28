@@ -6,6 +6,8 @@ const enrollRouter = require("./routes/enrollment.routes");
 const profileRouter = require("./routes/user.routes");
 const statistiquesRouter = require("./routes/statistiques.routes");
 const authRouter = require("./routes/auth.routes");
+const rolesRouter = require("./routes/role.routes");
+const featureRouter = require("./routes/feature.routes");
 const globalErrorController = require("./controllers/error.controller");
 const app = express();
 const fileUpload = require("express-fileupload");
@@ -31,6 +33,8 @@ app.use("/api/v1/courses", courseRouter);
 app.use("/api/v1/payments", paimentRouter);
 app.use("/api/v1/enrollment", enrollRouter);
 app.use("/api/v1/users", profileRouter);
+app.use("/api/v1/roles", rolesRouter);
+app.use("/api/v1/features", featureRouter);
 
 app.all("*", (req, res, next) => {
   next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));

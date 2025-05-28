@@ -1,11 +1,10 @@
 /* eslint-disable react/prop-types */
 import React from "react";
-import Table from "../../ui/TableOff";
+import Table from "../../ui/Table";
 import { formatDate } from "../../utils/formatDate";
 import Badge from "../../ui/Badge";
 
 export default function PaimentRow({ payment }) {
-  console.log("payment", payment);
   const badgeVariant = {
     published: "success",
     draft: "warning",

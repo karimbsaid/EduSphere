@@ -1,6 +1,6 @@
 /* eslint-disable react/prop-types */
 
-import Button from "../ui/ButtonVF";
+import Button from "../ui/Button";
 
 function Pagination({
   currentPage,

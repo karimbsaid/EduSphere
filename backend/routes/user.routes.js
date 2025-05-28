@@ -10,19 +10,19 @@ router.patch("/update-me", auth.protect, profileController.updateProfile);
 router.post(
   "/",
   auth.protect,
-  auth.restrictTo("admin"),
+  auth.restrictTo("Admin"),
   userController.addUser
 );
 router.patch(
   "/:userId",
   auth.protect,
-  auth.restrictTo("admin"),
+  auth.restrictTo("Admin"),
   userController.editUser
 );
 router.delete(
   "/:userId",
   auth.protect,
-  auth.restrictTo("admin"),
+  auth.restrictTo("Admin"),
   userController.deleteUser
 );
 

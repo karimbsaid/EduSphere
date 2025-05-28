@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import TagInput from "../../../components/TagInput";
 import { useParams } from "react-router-dom";
 import { CourseContext } from "../../../context/courseContext";
+import Input from "../../../ui/Input";
 
 export default function CourseDetailsForm() {
   const { courseId } = useParams();
@@ -43,7 +44,15 @@ export default function CourseDetailsForm() {
       <h2 className="mb-6 text-2xl font-bold">Course Details</h2>
       <div className="space-y-4">
         <div>
-          <label
+          <Input
+            label="Course Title"
+            type="text"
+            value={state.title}
+            onChange={(e) => handleCourseDataChange("title", e.target.value)}
+            className="w-full"
+            placeholder="Enter course title"
+          />
+          {/* <label
             htmlFor="title"
             className="block text-sm font-medium text-gray-700"
           >
@@ -56,7 +65,7 @@ export default function CourseDetailsForm() {
             onChange={(e) => handleCourseDataChange("title", e.target.value)}
             placeholder="Enter course title"
             className="mt-1 w-full rounded border-gray-300 p-2 shadow-sm focus:border-black focus:ring-black"
-          />
+          /> */}
         </div>
 
         <div>

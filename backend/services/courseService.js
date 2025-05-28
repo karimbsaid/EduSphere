@@ -4,6 +4,10 @@ const Lecture = require("../models/lecture.models");
 const Resource = require("../models/resource.models");
 const AppError = require("../utils/appError");
 const mongoose = require("mongoose");
+const CloudinaryStorage = require("../services/cloudinaryStorage");
+const cloudinary = require("../config/cloudinary");
+const storage = new CloudinaryStorage(cloudinary);
+const slugify = require("slugify");
 
 exports.createCourseUpdate = async (courseId, userId) => {
   const session = await mongoose.startSession();
@@ -159,4 +163,172 @@ async function createDraftCourse(
   );
 
   return draftCourse;
+}
+///////////////////*///////////////////////////////
+//creation cours
+
+async function uploadCoverImage(coverImage, slug) {
+  const uploaded = await storage.upload(coverImage, `courses/${slug}`);
+  return {
+    imageUrl: uploaded.secure_url,
+    assetFolder: uploaded.asset_folder,
+  };
+}
+
+async function createCourseDocument(
+  data,
+  userId,
+  imageUrl,
+  assetFolder,
+  session
+) {
+  return await Course.create(
+    [{ ...data, imageUrl, assetFolder, instructor: userId }],
+    { session }
+  );
+}
+
+exports.createFullCourse = async (courseData, user, files) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const { sections = [], resources = [], ...courseInfo } = courseData;
+    console.log(sections, resources, courseInfo);
+
+    let imageUrl = "";
+    let assetFolder = "";
+    if (files?.coverImage) {
+      const image = await uploadCoverImage(files.coverImage, courseInfo.slug);
+      imageUrl = image.imageUrl;
+      assetFolder = image.assetFolder;
+    }
+
+    const courseArr = await createCourseDocument(
+      courseInfo,
+      user._id,
+      imageUrl,
+      assetFolder,
+      session
+    );
+    const course = courseArr[0];
+
+    const fullSections = await createSections(sections, course._id, session);
+    await createLectures(fullSections, course, session, files);
+    await createResources(resources, course._id, session, files);
+
+    await session.commitTransaction();
+    session.endSession();
+
+    return course;
+  } catch (err) {
+    await session.abortTransaction();
+    session.endSession();
+    throw err;
+  }
+};
+
+async function createSections(sections, courseId, session) {
+  const sectionDocs = [];
+  const parsedSections = JSON.parse(sections);
+  console.log(parsedSections);
+
+  for (const section of parsedSections) {
+    const sec = await Section.create([{ title: section.title }], { session });
+
+    sectionDocs.push({ ...sec[0]._doc, lectures: section.lectures });
+    await Course.findByIdAndUpdate(
+      courseId,
+      { $push: { sections: sec[0]._id } },
+      { session }
+    );
+  }
+
+  return sectionDocs;
+}
+
+async function createLectures(sectionsWithLectures, course, session, files) {
+  for (const sec of sectionsWithLectures) {
+    const section = await Section.findById(sec._id).session(session);
+
+    for (const lecture of sec.lectures) {
+      if (lecture.type === "quiz") {
+        const cleanedQuestions = lecture?.questions?.map((question) => {
+          const filteredOptions = question.options.filter(
+            (option) => option.text && option.text.trim() !== ""
+          );
+
+          if (filteredOptions.length === 0) {
+            throw new Error(
+              `La question "${question.questionText}" n'a aucune option valide`
+            );
+          }
+
+          return {
+            ...question,
+            options: filteredOptions,
+          };
+        });
+
+        lecture.questions = cleanedQuestions;
+      }
+      const { fileFieldName, ...lectureData } = lecture;
+      console.log(fileFieldName);
+      console.log(files[fileFieldName]);
+
+      let url = "";
+      if (lectureData.type === "video" && fileFieldName) {
+        // Use the extracted fileFieldName
+        const filename = fileFieldName;
+        const folder = `courses/${course.title}/${slugify(section.title, {
+          lower: true,
+        })}`;
+        const uploadedVideo = await storage.upload(
+          files[fileFieldName], // Use the extracted fileFieldName to get the file
+          folder
+        );
+        url = uploadedVideo.secure_url;
+      }
+      console.log({ ...lecture, url });
+
+      const created = await Lecture.create([{ ...lectureData, url }], {
+        session,
+      });
+      console.log("created ", created);
+
+      section.lectures.push(created[0]._id);
+      console.log("section", section);
+      course.totalDuration += lecture.duration || 0;
+      console.log("course", course);
+      await section.save({ session });
+    }
+  }
+
+  await course.save({ session });
+}
+
+async function createResources(resources, courseId, session, files) {
+  console.log("create resource");
+  const parsedResources = JSON.parse(resources); // frontend sends stringified
+  for (const resource of parsedResources) {
+    console.log("element", resource);
+    let url = "";
+
+    const file = files[resource.fileFieldName]; // 🔑 get the file from req.files
+
+    if (file) {
+      const uploaded = await storage.upload(file, `courses/resources`);
+      url = uploaded.secure_url;
+    }
+
+    const resDoc = await Resource.create(
+      [{ title: resource.title, resourceUrl: url }],
+      { session }
+    );
+    await Course.findByIdAndUpdate(
+      courseId,
+      { $addToSet: { resources: resDoc[0]._id } },
+      { session }
+    );
+  }
 }

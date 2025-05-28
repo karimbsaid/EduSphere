@@ -1,7 +1,7 @@
 /* eslint-disable react/prop-types */
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import Input from "../../ui/Input";
-import DropDown from "../../ui/DropDownn";
+import DropDown from "../../ui/DropDown";
 import Button from "../../ui/Button";
 import { HiMiniStar, HiOutlineStar } from "react-icons/hi2";
 import { useSearchParams } from "react-router-dom";

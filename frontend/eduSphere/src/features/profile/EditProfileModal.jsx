@@ -9,7 +9,6 @@ const EditProfileModal = ({
   handleSubmit,
   setIsDialogOpen,
 }) => {
-  console.log(formData);
   const [previewImage, setPreviewImage] = useState(
     formData.avatar || "/placeholder.svg"
   );

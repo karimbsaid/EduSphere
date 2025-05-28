@@ -414,10 +414,10 @@ const courseReducer = (state, action) => {
           if (i !== resourceIndex) return res;
 
           if (state.isEdit && !res.isNew) {
-            return { ...res, deleted: true }; // Soft delete
+            return { ...res, deleted: true };
           }
 
-          return null; // Hard delete for new or non-edit mode
+          return null;
         })
         .filter(Boolean);
 

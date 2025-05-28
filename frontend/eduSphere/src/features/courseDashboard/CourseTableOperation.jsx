@@ -2,18 +2,22 @@ import React, { useEffect, useRef, useState } from "react";
 // import Modal from "../../ui/ModalOff";
 import Button from "../../ui/Button";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { FaFilter, FaSearch } from "react-icons/fa";
+import { FaFilter } from "react-icons/fa";
 import Input from "../../ui/Input";
 import FilterButtons from "../../components/FilterButtons";
-import DropDown from "../../ui/DropDownn";
-import { HiXMark } from "react-icons/hi2";
+import DropDown from "../../ui/DropDown";
+import { useAuth } from "../../context/authContext";
 
 export default function CourseTableOperation() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [querySearch, setQuerySearch] = useState("");
   const inputRef = useRef(null);
   const sort = searchParams.get("sort") || "-createdAt";
+  const isAdmin = user.role.name === "Admin";
+
+  console.log("sorting", sort);
   const filterOptions = [
     { value: "tous", label: "Tous" },
     { value: "published", label: "Publié" },
@@ -52,9 +56,9 @@ export default function CourseTableOperation() {
           </h1>
           <p className="text-slate-700">Gérez les cours de la plateforme</p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="relative">
-            <FaSearch className="absolute left-2 top-2.5 h-4 w-4 text-slate-400" />
+        <div className="flex flex-col sm:flex-row gap-4 items-center">
+          <div className="relative w-full">
+            {/* <FaSearch className="absolute left-2 top-1/2 h-4 w-4 text-slate-400 transform -translate-y-1/2" /> */}
             <Input
               ref={inputRef}
               placeholder="Rechercher des cours..."
@@ -63,17 +67,18 @@ export default function CourseTableOperation() {
               onChange={(e) => setQuerySearch(e.target.value)}
             />
           </div>
-          <Button
-            label="ajouter un cour"
-            onClick={handleCreateCourseNav}
-            variant="simple"
-          />
+          {!isAdmin && (
+            <Button
+              label="ajouter un cour"
+              onClick={handleCreateCourseNav}
+              variant="simple"
+            />
+          )}
         </div>
       </div>
       <div className="flex justify-between">
         <FilterButtons options={filterOptions} filterField="status" />
         <div className="flex items-center gap-2">
-          <FaFilter className="h-4 w-4" />
           <DropDown
             value={sort}
             onValueChange={(v) => {
@@ -81,7 +86,12 @@ export default function CourseTableOperation() {
               setSearchParams(searchParams);
             }}
           >
-            <DropDown.Button label="Filtrer par" />
+            <DropDown.Button
+              outline
+              icon={FaFilter} // Pass icon component directly
+              className="w-full"
+              label="Trier par"
+            />
             <DropDown.Content>
               <DropDown.Item value="-createdAt">
                 Récemment ajoutés

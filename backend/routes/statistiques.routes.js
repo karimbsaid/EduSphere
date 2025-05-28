@@ -1,41 +1,55 @@
 const express = require("express");
 const router = express.Router();
 const auth = require("../middleware/auth");
-const statistiqueController = require("../controllers/statistique.controller");
-const statsController = require("../controllers/stats.controller");
-const allstatscontroller = require("../controllers/statss.controller");
-const inststatsController = require("../controllers/instructorstatscontroller");
-router.get("/admin-stats", statsController.getAdminStats);
-router.get(
-  "/instructor-stats",
-  auth.protect,
-  inststatsController.getInstructorStats
-);
+const statistiquesController = require("../controllers/statistique.controller");
+
 router.get(
   "/stats",
   auth.protect,
   auth.restrictTo("Admin", "Instructor"),
-  allstatscontroller.getStats
-);
-router.use(auth.protect);
-router.get("/revenu", statistiqueController.getRevenueStats);
-router.get("/course-distribution", statistiqueController.getCourseDistribution);
-router.get("/course-on-hold", statistiqueController.getCourseOnHold);
-router.get("/top-5-instructor", statistiqueController.getTopInstructors);
-router.get("/top-5-courses", statistiqueController.getPopularCourses);
-router.get(
-  "/completion-rate",
-  statistiqueController.getCompletionRateByCategory
+  statistiquesController.getStats
 );
 
 router.get(
-  "/total-revenu",
-  auth.restrictTo("admin", "instructor"),
-  statistiqueController.getTotalRevenue
+  "/stats/recentUser",
+  statistiquesController.getRecentUsers,
+  statistiquesController.getRecentUserHandler
 );
 router.get(
-  "/total-users",
-  auth.restrictTo("admin", "instructor"),
-  statistiqueController.getTotalUsers
+  "/stats/recentEnrollement",
+  auth.protect,
+  auth.restrictTo("Admin", "Instructor"),
+  statistiquesController.getRecentEnrollmentsForInstructor
 );
+router.get(
+  "/stats/pendingCourses",
+  auth.protect,
+  auth.restrictTo("Admin", "Instructor"),
+  statistiquesController.getRecentPendingCourses
+);
+router.get(
+  "/stats/studentsByCourse",
+  auth.protect,
+  auth.restrictTo("Instructor"),
+  statistiquesController.getStudentsByCourse
+);
+
+router.get(
+  "/stats/studentsByCategory",
+  // auth.protect,
+  // auth.restrictTo("Admin"),
+  statistiquesController.getStudentsByCategory
+);
+router.get(
+  "/stats/coursesByCategory",
+  statistiquesController.getCoursesByCategories
+);
+router.get(
+  "/stats/revenue",
+  auth.protect,
+  auth.restrictTo("Admin", "Instructor"),
+  statistiquesController.getRevenueByDuration
+);
+
+router.get("/global", statistiquesController.getGlobalStats);
 module.exports = router;

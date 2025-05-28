@@ -1,174 +1,39 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
-import {
-  LineChart,
-  Line,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-} from "recharts";
+import { useState, useEffect } from "react";
 import { useAuth } from "../context/authContext";
-
-// Composant pour les cartes de statistiques
-const StatCard = ({ title, value, change, changeText }) => (
-  <div className="bg-white p-4 rounded-lg shadow-md">
-    <h3 className="text-lg font-semibold text-gray-700">{title}</h3>
-    <p className="text-3xl font-bold text-gray-900">{value}</p>
-    {change !== undefined && changeText && (
-      <p
-        className={`text-sm ${change >= 0 ? "text-green-500" : "text-red-500"}`}
-      >
-        {change >= 0 ? "+" : ""}
-        {change} {changeText}
-      </p>
-    )}
-  </div>
-);
-
-// Composant pour le graphique des revenus / mois
-const RevenueChart = ({ labels, data }) => {
-  const chartData = labels.map((label, index) => ({
-    month: label,
-    revenue: data[index],
-  }));
-
-  return (
-    <LineChart width={500} height={300} data={chartData}>
-      <CartesianGrid strokeDasharray="3 3" />
-      <XAxis dataKey="month" />
-      <YAxis />
-      <Tooltip />
-      <Legend />
-      <Line
-        type="monotone"
-        dataKey="revenue"
-        stroke="#1E90FF"
-        name="Revenus (TND)"
-      />
-    </LineChart>
-  );
-};
-
-// Composant pour le graphique des étudiants / cours (instructeurs) ou revenus / cours (admins)
-const CourseStatsChart = ({ isAdmin, courseStats }) => {
-  if (isAdmin) {
-    const chartData = courseStats.map((stat) => ({
-      course: stat.courseTitle,
-      revenue: stat.totalRevenue,
-      students: stat.totalStudents,
-    }));
-
-    return (
-      <BarChart width={500} height={300} data={chartData}>
-        <CartesianGrid strokeDasharray="3 3" />
-        <XAxis dataKey="course" />
-        <YAxis yAxisId="left" />
-        <YAxis yAxisId="right" orientation="right" />
-        <Tooltip />
-        <Legend />
-        <Bar
-          yAxisId="left"
-          dataKey="revenue"
-          fill="#1E90FF"
-          name="Revenus (TND)"
-        />
-        <Bar
-          yAxisId="right"
-          dataKey="students"
-          fill="#32CD32"
-          name="Étudiants"
-        />
-      </BarChart>
-    );
-  } else {
-    const chartData = courseStats.map((stat) => ({
-      course: stat.courseTitle,
-      students: stat.totalStudents,
-    }));
-
-    return (
-      <BarChart width={500} height={300} data={chartData}>
-        <CartesianGrid strokeDasharray="3 3" />
-        <XAxis dataKey="course" />
-        <YAxis />
-        <Tooltip />
-        <Legend />
-        <Bar dataKey="students" fill="#32CD32" name="Étudiants" />
-      </BarChart>
-    );
-  }
-};
-
-// Composant pour l’activité récente
-const RecentActivity = ({ activities }) => (
-  <div className="bg-white p-4 rounded-lg shadow-md">
-    <h3 className="text-lg font-semibold text-gray-700">Activité récente</h3>
-    <ul className="mt-2 space-y-2">
-      {activities.map((activity, index) => (
-        <li key={index} className="text-sm text-gray-600">
-          {activity.message}{" "}
-          <span className="text-gray-400">({activity.time})</span>
-        </li>
-      ))}
-    </ul>
-  </div>
-);
-
-// Composant pour les actions rapides (adapté selon le rôle)
-const QuickActions = ({ isAdmin }) => (
-  <div className="bg-white p-4 rounded-lg shadow-md">
-    <h3 className="text-lg font-semibold text-gray-700">Actions rapides</h3>
-    <div className="mt-2 space-x-2">
-      {isAdmin ? (
-        <>
-          <button className="bg-teal-500 text-white px-4 py-2 rounded hover:bg-teal-600">
-            Approuver des cours
-          </button>
-          <button className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
-            Voir les paiements
-          </button>
-          <button className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
-            Gérer les utilisateurs
-          </button>
-        </>
-      ) : (
-        <>
-          <button className="bg-teal-500 text-white px-4 py-2 rounded hover:bg-teal-600">
-            Créer un nouveau cours
-          </button>
-          <button className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
-            Voir mes étudiants
-          </button>
-        </>
-      )}
-    </div>
-  </div>
-);
-
-// Composant pour les filtres des graphiques
-const ChartFilters = ({ onFilterChange }) => (
-  <div className="mb-4">
-    <label className="mr-2 text-gray-700">Période :</label>
-    <select
-      onChange={(e) => onFilterChange(e.target.value)}
-      className="border rounded px-2 py-1"
-    >
-      <option value="7days">Derniers 7 jours</option>
-      <option value="month">Ce mois</option>
-      <option value="year">Cette année</option>
-    </select>
-  </div>
-);
-
-// Composant principal du tableau de bord unifié
+import StatCard from "../features/dashboard/StatCard";
+import QuickActions from "../features/dashboard/QuickActions";
+import ChartFilters from "../features/dashboard/ChartFilters";
+import RevenueChart from "../features/dashboard/RevenueChart";
+import Loading from "../components/Loading";
+import {
+  getCoursesByCategories,
+  getRecentEnrollments,
+  getRecentPendingCourse,
+  getRecentUsers,
+  GetRevenueByPeriod,
+  getStatsForDashboard,
+  getStudentsByCategory,
+  getStudentsByCourses,
+} from "../services/apiStats";
+import { toast } from "react-hot-toast";
+import {
+  format,
+  eachDayOfInterval,
+  eachWeekOfInterval,
+  eachMonthOfInterval,
+  startOfWeek,
+  startOfMonth,
+} from "date-fns";
+import fr from "date-fns/locale/fr";
+import RecentTable from "../features/dashboard/Recents";
+import PieChartCustom from "../features/dashboard/PieChart";
+import BarChartCustom from "../features/dashboard/BarChart";
 const Dashboard = () => {
   const { user } = useAuth();
   const isAdmin = user?.role?.name === "Admin";
   const { token } = user;
+  const [startDateRevenu, setStartDateRevenu] = useState(null);
+  const [endDateRevenu, setEndDateRevenu] = useState(new Date());
 
   const [stats, setStats] = useState({
     totalUsers: 0,
@@ -184,36 +49,192 @@ const Dashboard = () => {
     totalCoursesActive: 0,
     pendingCourses: 0,
   });
+
   const [charts, setCharts] = useState({
-    revenueByMonth: { labels: [], data: [] },
-    revenueByCourse: [],
-    studentsByCourse: [],
+    revenue: {
+      labels: [],
+      data: [],
+    },
+    coursesByCategories: [],
+    studentsByCategory: [],
+    studentsByCourses: [],
   });
-  const [recentActivity, setRecentActivity] = useState([]);
-  const [filter, setFilter] = useState("month");
+
+  const [recentActivity, setRecentActivity] = useState({
+    recenteUsers: [],
+    recentEnrollments: [],
+    recentPendingCourse: [],
+  });
+  const [filterRevenu, setFilterRevenu] = useState({
+    period: "7days",
+    courseId: "All",
+  });
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const now = new Date();
+    let startDate;
+
+    if (filterRevenu.period === "7days") {
+      startDate = new Date(now.setDate(now.getDate() - 7));
+      setStartDateRevenu(startDate);
+    } else if (filterRevenu.period === "month") {
+      startDate = new Date(now.setMonth(now.getMonth() - 1));
+      setStartDateRevenu(startDate);
+    } else if (filterRevenu.period === "year") {
+      startDate = new Date(now.setFullYear(now.getFullYear() - 1));
+      setStartDateRevenu(startDate);
+    }
+  }, [filterRevenu.period]);
+
+  useEffect(() => {
+    if (startDateRevenu && endDateRevenu) {
+      fetchRevenueData();
+    }
+  }, [startDateRevenu, endDateRevenu, filterRevenu.courseId]);
+
+  const fetchRevenueData = async () => {
+    const instructorId = !isAdmin ? user._id : "";
+    const courseId =
+      filterRevenu.courseId !== "All" ? filterRevenu.courseId : "";
+
+    const response = await GetRevenueByPeriod(
+      token,
+      instructorId,
+      courseId,
+      startDateRevenu.toISOString(),
+      endDateRevenu.toISOString()
+    );
+
+    const revenueData = response.data;
+
+    // Calculer la différence en jours pour déterminer la granularité
+    // (même logique que dans le backend)
+    const diffInDays =
+      (endDateRevenu - startDateRevenu) / (1000 * 60 * 60 * 24);
+
+    let granularity;
+    if (diffInDays <= 31) {
+      granularity = "day";
+    } else if (diffInDays <= 90) {
+      granularity = "week";
+    } else {
+      granularity = "month";
+    }
+
+    let allDates = [];
+    let formattedLabelFn;
+    let rawKeyFn;
+
+    if (granularity === "day") {
+      // Groupement par jour
+      allDates = eachDayOfInterval({
+        start: startDateRevenu,
+        end: endDateRevenu,
+      });
+      formattedLabelFn = (date) => format(date, "EEE dd/MM", { locale: fr }); // ex: "lun. 20/05"
+      rawKeyFn = (date) => format(date, "yyyy-MM-dd"); // ex: "2025-05-20"
+    } else if (granularity === "week") {
+      allDates = eachWeekOfInterval({
+        start: startDateRevenu,
+        end: endDateRevenu,
+      });
+      formattedLabelFn = (date) => {
+        const weekNumber = format(date, "w");
+        const startOfWeekDate = startOfWeek(date, { weekStartsOn: 1 }); // Lundi = début de semaine
+        return `Sem. ${weekNumber} (${format(startOfWeekDate, "dd/MM", {
+          locale: fr,
+        })})`;
+      };
+      rawKeyFn = (date) => {
+        const startOfWeekDate = startOfWeek(date, { weekStartsOn: 1 });
+        return format(startOfWeekDate, "yyyy-ww"); // ex: "2025-21"
+      };
+    } else {
+      // Groupement par mois
+      allDates = eachMonthOfInterval({
+        start: startDateRevenu,
+        end: endDateRevenu,
+      });
+      formattedLabelFn = (date) => format(date, "MMMM yyyy", { locale: fr }); // ex: "mai 2025"
+      rawKeyFn = (date) => format(startOfMonth(date), "yyyy-MM"); // ex: "2025-05"
+    }
+
+    // Déduire la clé depuis le backend (devrait être "date")
+    const key =
+      revenueData.length > 0
+        ? Object.keys(revenueData[0]).find((k) => k !== "total")
+        : "date";
+
+    // Créer une Map pour un accès rapide aux données
+    const dataMap = new Map(revenueData.map((item) => [item[key], item.total]));
+
+    const labelsFinal = [];
+    const dataFinal = [];
+
+    for (let date of allDates) {
+      const label = formattedLabelFn(date);
+      const rawKey = rawKeyFn(date);
+
+      labelsFinal.push(label);
+      dataFinal.push(dataMap.get(rawKey) || 0);
+    }
+
+    setCharts((prev) => ({
+      ...prev,
+      revenue: { labels: labelsFinal, data: dataFinal },
+    }));
+  };
+
+  const handleFilterChange = (field, value) => {
+    setFilterRevenu((prev) => ({ ...prev, [field]: value }));
+  };
 
   useEffect(() => {
     const fetchStats = async () => {
       setLoading(true);
       try {
-        const response = await axios.get(
-          `http://localhost:8080/api/v1/statistiques/stats?period=${filter}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        // console.log(response);
-
-        if (response.data.status !== "success" || !response.data.data) {
-          throw new Error(
-            response.data.message || "Réponse inattendue de l’API"
+        const responsestats = await getStatsForDashboard(token);
+        if (isAdmin) {
+          const recentUsersResponse = await getRecentUsers("");
+          setRecentActivity((prev) => ({
+            ...prev,
+            recenteUsers: recentUsersResponse.data.data,
+          }));
+        }
+        const recentEnrollementResponse = await getRecentEnrollments(token);
+        setRecentActivity((prev) => ({
+          ...prev,
+          recentEnrollments: recentEnrollementResponse.recentEnrollments,
+        }));
+        const recentPendingCourseResponse = await getRecentPendingCourse(token);
+        setRecentActivity((prev) => ({
+          ...prev,
+          recentPendingCourse: recentPendingCourseResponse.data.data,
+        }));
+        if (isAdmin) {
+          const coursesByCategoriesResponse = await getCoursesByCategories(
+            token
           );
+          setCharts((prev) => ({
+            ...prev,
+            coursesByCategories:
+              coursesByCategoriesResponse.coursesByCategories,
+          }));
+        }
+        if (isAdmin) {
+          const { studentsByCategory } = await getStudentsByCategory(token);
+          setCharts((prev) => ({ ...prev, studentsByCategory }));
+        }
+        if (!isAdmin) {
+          const { studentByCourse } = await getStudentsByCourses(token);
+          setCharts((prev) => ({
+            ...prev,
+            studentsByCourses: studentByCourse,
+          }));
         }
 
-        const { stats, charts, recentActivity } = response.data.data;
+        const { stats } = responsestats.data;
         setStats(
           stats || {
             totalUsers: 0,
@@ -230,35 +251,18 @@ const Dashboard = () => {
             pendingCourses: 0,
           }
         );
-        setCharts(
-          charts || {
-            revenueByMonth: { labels: [], data: [] },
-            revenueByCourse: [],
-            studentsByCourse: [],
-          }
-        );
-        setRecentActivity(recentActivity || []);
       } catch (error) {
-        console.error(
-          "Erreur lors de la récupération des statistiques :",
-          error.message
-        );
-        setRecentActivity([
-          {
-            message: "Erreur lors du chargement des données",
-            time: new Date().toLocaleTimeString(),
-          },
-        ]);
+        toast.error(error.message);
       } finally {
         setLoading(false);
       }
     };
 
     fetchStats();
-  }, [filter, token]);
+  }, [token]);
 
   if (loading) {
-    return <div className="p-6 text-center">Chargement...</div>;
+    return <Loading />;
   }
 
   return (
@@ -323,29 +327,71 @@ const Dashboard = () => {
         )}
       </div>
 
-      {/* Graphiques */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <div className="bg-white p-4 rounded-lg shadow-md">
-          <ChartFilters onFilterChange={setFilter} />
+          <ChartFilters
+            onFilterChange={handleFilterChange}
+            filter={filterRevenu}
+            setStartDate={setStartDateRevenu}
+            startDate={startDateRevenu}
+            setEndDate={setEndDateRevenu}
+            endDate={endDateRevenu}
+          />
+
           <RevenueChart
-            labels={charts.revenueByMonth.labels}
-            data={charts.revenueByMonth.data}
+            labels={charts.revenue.labels}
+            data={charts.revenue.data}
           />
         </div>
-        <div className="bg-white p-4 rounded-lg shadow-md">
-          <ChartFilters onFilterChange={setFilter} />
-          <CourseStatsChart
-            isAdmin={isAdmin}
-            courseStats={
-              isAdmin ? charts.revenueByCourse : charts.studentsByCourse
-            }
+        {charts.studentsByCategory.length > 0 && (
+          <BarChartCustom data={charts.studentsByCategory} />
+        )}
+        {charts.studentsByCourses.length > 0 && (
+          <BarChartCustom
+            data={charts.studentsByCourses}
+            title="repartion étudiants par cours "
           />
-        </div>
+        )}
+        {charts.coursesByCategories.length > 0 && (
+          <div className="bg-white p-4 rounded-lg shadow-md">
+            <PieChartCustom
+              data={charts.coursesByCategories}
+              nameKey="_id"
+              value="totalCourses"
+              title="repartion de cour par categories"
+            />
+          </div>
+        )}
       </div>
 
-      {/* Activité récente et actions rapides */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <RecentActivity activities={recentActivity} />
+        {recentActivity.recenteUsers.length > 0 && (
+          <RecentTable
+            data={recentActivity.recenteUsers}
+            labels={[
+              { label: "name", value: "name" },
+              { label: "date inscription", value: "createdAt" },
+            ]}
+            name="Recent users"
+          />
+        )}
+        <RecentTable
+          data={recentActivity.recentEnrollments}
+          labels={[
+            { label: "student", value: "studentName" },
+            { label: "course", value: "courseTitle" },
+            { label: "date inscription", value: "enrolledAt" },
+          ]}
+          name="Recent inscrptions"
+        />
+        <RecentTable
+          data={recentActivity.recentPendingCourse}
+          labels={[
+            { label: "title", value: "title" },
+            { label: "date création", value: "createdAt" },
+          ]}
+          name="cours en cours"
+        />
         <QuickActions isAdmin={isAdmin} />
       </div>
     </div>

@@ -1,7 +1,6 @@
 const CHAT_URL = "http://127.0.0.1:8000/";
 export const splitPdfFile = async (resourceData) => {
   const formData = new FormData();
-  console.log(resourceData);
   formData.append("subheading_size", resourceData.heading_font_threshold);
   formData.append("debut_de_document", resourceData.debut_de_document);
   formData.append("space_threshold", resourceData.space_threshold);
@@ -23,13 +22,23 @@ export const storeDocuments = async (documents) => {
   return response.json();
 };
 
-export const ask = async (message) => {
-  const response = await fetch(`${CHAT_URL}ask`, {
+export const ask = async (message, onToken) => {
+  const response = await fetch(`${CHAT_URL}ask/stream`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({ question: message }),
   });
-  return response.json();
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder("utf-8");
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    const token = decoder.decode(value, { stream: true });
+    onToken(token); // send token to the UI
+  }
 };

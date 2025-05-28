@@ -17,7 +17,7 @@ export default function Badge({
   };
   return (
     <span
-      className={`flex items-center w-auto justify-center  rounded-xl px-1 py-1 font-semibold ${style} ${varianatStyles[variant]}`}
+      className={`flex items-center w-auto justify-center text-sm  rounded-xl  ${style} ${varianatStyles[variant]}`}
       {...props}
     >
       {text}

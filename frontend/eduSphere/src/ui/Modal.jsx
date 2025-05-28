@@ -1,156 +1,76 @@
 /* eslint-disable react/prop-types */
-import React, {
+import {
+  cloneElement,
   createContext,
   useContext,
-  useState,
-  useRef,
   useEffect,
+  useRef,
+  useState,
 } from "react";
-import ReactDOM from "react-dom";
+import { createPortal } from "react-dom";
+import { HiXMark } from "react-icons/hi2";
+import Button from "./Button";
 
-// Création du contexte pour le modal
 const ModalContext = createContext();
 
-// Composant principal Modal
 function Modal({ children }) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [openName, setOpenName] = useState("");
 
-  const openModal = () => setIsOpen(true);
-  const closeModal = () => setIsOpen(false);
+  const close = () => setOpenName("");
+  const open = setOpenName;
 
   return (
-    <ModalContext.Provider value={{ isOpen, openModal, closeModal }}>
+    <ModalContext.Provider value={{ openName, close, open, setOpenName }}>
       {children}
     </ModalContext.Provider>
   );
 }
 
-// Composant Trigger pour ouvrir le modal
-function Trigger({ children, ...props }) {
-  const { openModal } = useContext(ModalContext);
+function Open({ children, opens: opensWindowName }) {
+  const { open } = useContext(ModalContext);
 
-  return (
-    <button onClick={openModal} {...props}>
-      {children}
-    </button>
-  );
+  return cloneElement(children, { onClick: () => open(opensWindowName) });
 }
 
-// Composant Content pour le contenu du modal
-function Content({ children }) {
-  const { isOpen, closeModal } = useContext(ModalContext);
-  const modalContentRef = useRef();
+function Window({ children, name }) {
+  const { openName, close } = useContext(ModalContext);
+  const modalElement = useRef();
+  useEffect(
+    function () {
+      function callback(e) {
+        if (modalElement.current && !modalElement.current.contains(e.target)) {
+          close();
+        }
+      }
+      document.addEventListener("click", callback, true);
+      return () => document.removeEventListener("click", callback);
+    },
+    [close]
+  );
 
-  // Gestion de la fermeture avec la touche ESC
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === "Escape") closeModal();
-    };
+  if (name !== openName) return null;
 
-    if (isOpen) {
-      document.addEventListener("keydown", handleKeyDown);
-    }
-
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, closeModal]);
-
-  if (!isOpen) return null;
-
-  return ReactDOM.createPortal(
-    <div
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] overflow-y-auto"
-      onClick={closeModal}
-    >
+  return createPortal(
+    <div className="modal fixed inset-0 bg-black/50 flex items-center justify-center z-[1000] overflow-y-auto">
       <div
-        ref={modalContentRef}
-        className="bg-white rounded-xl shadow-2xl p-8 min-w-[500px] max-w-4xl w-full mx-4 my-auto relative" // Modification ici
-        onClick={(e) => e.stopPropagation()}
+        ref={modalElement}
+        className="bg-white rounded-xl shadow-2xl p-8  max-w-4xl  mx-4 my-auto relative"
       >
         <button
-          onClick={closeModal}
-          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 transition-colors"
+          onClick={close}
+          className="absolute top-4 right-4 text-gray-500 hover:text-black"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M6 18L18 6M6 6l12 12"
-            />
-          </svg>
+          <HiXMark className="w-6 h-6" />
         </button>
-        {children}
+
+        <div>{cloneElement(children, { onClose: close })}</div>
       </div>
     </div>,
-    document.getElementById("modal-root")
+    document.body
   );
 }
 
-// Composants enfants
-function Header({ children }) {
-  return (
-    <div className="flex justify-between items-center mb-4">
-      <h3 className="text-xl font-semibold">{children}</h3>
-      <CloseButton />
-    </div>
-  );
-}
+Modal.Open = Open;
+Modal.Window = Window;
 
-function Body({ children }) {
-  return <div className="mb-4">{children}</div>;
-}
-
-function Footer({ children }) {
-  const { closeModal } = useContext(ModalContext);
-
-  return (
-    <div className="flex justify-end gap-2">
-      {React.Children.map(children, (child) => {
-        if (!React.isValidElement(child)) return child;
-
-        // Fusionne onClick original avec closeModal
-        const originalOnClick = child.props.onClick;
-        if (child.props.closeOnClick) {
-          return React.cloneElement(child, {
-            onClick: (e) => {
-              if (originalOnClick) originalOnClick(e);
-              closeModal();
-            },
-          });
-        }
-      })}
-    </div>
-  );
-}
-
-function CloseButton({ children, ...props }) {
-  const { closeModal } = useContext(ModalContext);
-
-  return (
-    <button
-      onClick={closeModal}
-      className="text-gray-500 hover:text-gray-700"
-      aria-label="Fermer"
-      {...props}
-    >
-      {children || "×"}
-    </button>
-  );
-}
-
-// Attribution des composants enfants au parent Modal
-Modal.Trigger = Trigger;
-Modal.Content = Content;
-Modal.Header = Header;
-Modal.Body = Body;
-Modal.Footer = Footer;
-Modal.CloseButton = CloseButton;
-
-export default Modal;
-export { ModalContext };
+export { Modal, ModalContext };

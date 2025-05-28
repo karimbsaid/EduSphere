@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { FaSearch } from "react-icons/fa";
 import Input from "../../ui/Input";
-import { Modal } from "../../ui/ModalOff";
+import { Modal } from "../../ui/Modal";
 import Button from "../../ui/Button";
 import UserForm from "./UserForm";
 import { useSearchParams } from "react-router-dom";

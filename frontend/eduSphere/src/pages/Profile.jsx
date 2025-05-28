@@ -52,7 +52,7 @@ export default function Profile() {
   const handleSubmit = async (formData) => {
     setLoading(true);
     const { user: updatedUser } = await updateProfile(formData, token);
-    setUser({ ...updatedUser, token }); // triggers user change
+    setUser({ ...updatedUser, token, role: user.role }); // triggers user change
     setLoading(false);
   };
 

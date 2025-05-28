@@ -74,7 +74,7 @@ const Button = ({
       outline: "border border-yellow-600 text-yellow-600 bg-transparent",
     },
     ghost: {
-      solid: "bg-red-200 text-red-600",
+      solid: "bg-red-600 text-white",
       outline: "border border-red-600 text-red-600 bg-transparent",
     },
     simple: {
@@ -101,7 +101,7 @@ const Button = ({
       disabled={disabled}
       aria-disabled={disabled}
       className={`
-        inline-flex items-center gap-2 rounded-lg transition whitespace-nowrap my-1
+        inline-flex items-center justify-between gap-2 rounded-lg transition whitespace-nowrap my-1
         ${varStyle} ${sizeStyle} ${disabled ? disabledStyles : ""} ${className}
       `}
       {...props}

@@ -35,7 +35,10 @@ exports.getAllUsers = catchAsync(async (req, res, next) => {
   const totalDocuments = await User.countDocuments(filterUser);
 
   // Appliquer les filtres, tri, pagination, etc.
-  const features = new APIFeatures(User.find(filterUser), req.query)
+  const features = new APIFeatures(
+    User.find(filterUser).populate("role"),
+    req.query
+  )
     .filter()
     .sort()
     .paginate()
@@ -84,6 +87,7 @@ exports.addUser = catchAsync(async (req, res, next) => {
 
 exports.editUser = catchAsync(async (req, res, next) => {
   const { userId } = req.params;
+  console.log(req.body);
   const userExiste = await User.findById(userId);
   if (!userExiste) {
     next(new AppError("aucune compte associé "));
@@ -94,6 +98,18 @@ exports.editUser = catchAsync(async (req, res, next) => {
     runValidators: true,
   });
 
+  res.status(201).json({
+    status: "success",
+    user,
+  });
+});
+
+exports.blockUser = catchAsync(async (req, res, next) => {
+  const { userId } = req.params;
+  const user = await User.findByIdAndUpdate(userId, req.body, {
+    new: true,
+    runValidators: true,
+  });
   res.status(201).json({
     status: "success",
     user,

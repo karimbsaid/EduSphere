@@ -18,7 +18,6 @@ import ProtectedRoute from "./pages/ProtectedRoute";
 import PaymentsDashboard from "./pages/PaymentsDashboard";
 import PublicLayout from "./components/PublicLayout";
 import { Toaster } from "react-hot-toast";
-import Spinner from "./ui/Spinner";
 import EnrolledStudentPage from "./pages/EnrolledStudentPage";
 import CoursePreviewPage from "./pages/CoursePreviewPage";
 import CourseDetailPage from "./pages/CourseDetail";
@@ -27,6 +26,8 @@ import { CourseProvider } from "./context/courseContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Navigate } from "react-router-dom";
 import Loading from "./components/Loading";
+import Role from "./pages/Role";
+import FeatureManagment from "./pages/FeatureManagment";
 
 function App() {
   const queryClient = new QueryClient({
@@ -87,9 +88,7 @@ function App() {
                   element={<AddReview />}
                 />
               </Route>
-              <Route
-                element={<ProtectedRoute group={["Admin", "Instructor"]} />}
-              >
+              <Route element={<ProtectedRoute group={["Instructor"]} />}>
                 <Route
                   path="/my-courses/add"
                   element={
@@ -98,11 +97,6 @@ function App() {
                     </CourseProvider>
                   }
                 />
-                <Route
-                  path="/course/:courseId/preview"
-                  element={<CoursePreviewPage />}
-                />
-
                 <Route
                   path="/my-courses/my-students"
                   element={<EnrolledStudentPage />}
@@ -115,22 +109,46 @@ function App() {
                     </CourseProvider>
                   }
                 />
-                <Route path="/dashboard/users" element={<Users />} />
+              </Route>
+              <Route
+                element={<ProtectedRoute group={["Admin", "Instructor"]} />}
+              >
+                <Route
+                  path="/course/:courseId/preview"
+                  element={<CoursePreviewPage />}
+                />
+
                 <Route
                   path="/dashboard/courses"
                   element={<CoursesDashboard />}
+                />
+
+                <Route path="/dashboard" element={<Dashboard />} />
+                {/* <Route path="/dashboard/role" element={<Role />} />
+                <Route
+                  path="/dashboard/feature"
+                  element={<FeatureManagment />}
+                /> */}
+
+                <Route path="/my-profile" element={<Profile />} />
+              </Route>
+              <Route element={<ProtectedRoute group={["Admin"]} />}>
+                <Route path="/dashboard/users" element={<Users />} />
+                <Route path="/dashboard/role" element={<Role />} />
+                <Route
+                  path="/dashboard/feature"
+                  element={<FeatureManagment />}
                 />
                 <Route
                   path="/dashboard/payments"
                   element={<PaymentsDashboard />}
                 />
-                <Route path="/dashboard" element={<Dashboard />} />
-
-                <Route path="/my-profile" element={<Profile />} />
               </Route>
             </Route>
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Signup />} />
+            <Route path="/role" element={<Role />} />
+            <Route path="/feature" element={<FeatureManagment />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Router>

@@ -24,6 +24,7 @@ export const AuthProvider = ({ children }) => {
 
         try {
           const { user } = await getMyprofile(token);
+          console.log("auth context user ", user);
           setUser({ ...user, token });
         } catch (error) {
           console.error("Failed to load user profile:", error);

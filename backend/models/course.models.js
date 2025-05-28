@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const slugify = require("slugify");
 const Section = require("./section.models");
 const Lecture = require("./lecture.models");
+const Ressource = require("./resource.models");
 const {
   deleteResourceFromCloudinary,
   getPublicId,
@@ -126,6 +127,9 @@ courseSchema.statics.deleteCourse = async function (courseId) {
   const course = await this.findById(courseId).populate("sections");
   for (const section of course.sections) {
     await Section.deleteSectionWithLecture(section._id);
+  }
+  for (const ressource of course.resources) {
+    await Ressource.deleteResource(ressource._id);
   }
   await course.deleteOne();
 };

@@ -11,7 +11,7 @@ const reviewRouter = require("./review.routes");
 const sectionRouter = require("./section.routes");
 const resourceRouter = require("./resource.routes");
 const Enrollment = require("../models/enrollment.model");
-router.get("/stats", courseController.getStatistics);
+// router.get("/stats", courseController.getStatistics);
 router.get("/recommend", auth.protect, recommendController.recommend);
 
 // router.get("/my-courses-stats", auth.protect, courseController.getMyCourses);
@@ -25,7 +25,7 @@ router.post(
     sourceField: "title",
   }),
   courseMiddleware.parseJSONFieldsMiddleware(["tags"]),
-  courseController.createCourse
+  courseController.createFullCourse
 );
 router.patch(
   "/:courseId",
@@ -63,6 +63,13 @@ router.get(
   "/top-five",
   courseController.getTopPopularCourses,
   courseController.getAllCourses
+);
+router.get(
+  "/titles",
+  auth.protect,
+  auth.restrictTo("Admin", "Instructor"),
+  courseController.getAllCourseTitle,
+  courseController.getManagedCours
 );
 
 router.get(

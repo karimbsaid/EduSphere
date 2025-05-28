@@ -16,7 +16,6 @@ export default function CourseLecture() {
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
   const navigate = useNavigate();
-  console.log("user", user);
 
   const token = user?.token;
 
@@ -25,7 +24,6 @@ export default function CourseLecture() {
       try {
         setIsLoading(true);
         const data = await getLecture(courseId, sectionId, lectureId, token);
-        console.log(data);
         setLecture(data);
       } catch (err) {
         toast.error("Erreur lors du chargement du contenu.");

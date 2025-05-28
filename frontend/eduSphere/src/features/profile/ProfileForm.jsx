@@ -2,6 +2,7 @@
 import React, { useRef, useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { FiCamera } from "react-icons/fi";
+import Avatar from "../../components/Avatar";
 
 export default function ProfileForm({
   formData,
@@ -57,18 +58,13 @@ export default function ProfileForm({
       <form onSubmit={handleSubmit(onSubmit)}>
         <div className="p-6 space-y-4">
           <div className="mx-auto mb-4 flex justify-center">
-            <div className="relative">
-              <div className="h-24 w-24 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
-                <img
-                  src={previewImage}
-                  alt="Profile"
-                  className="h-full w-full object-cover"
-                />
-              </div>
-              <div
-                onClick={handleImageClick}
-                className="absolute bottom-0 right-0 rounded-full bg-blue-600 p-1 text-white cursor-pointer"
-              >
+            <Avatar
+              image={previewImage}
+              alt="user image"
+              size={24}
+              onClick={handleImageClick}
+            >
+              <div className="absolute bottom-0 right-0 rounded-full bg-blue-600 p-1 text-white cursor-pointer">
                 <FiCamera className="h-4 w-4" />
               </div>
               <input
@@ -78,7 +74,7 @@ export default function ProfileForm({
                 className="hidden"
                 onChange={handleImageChange}
               />
-            </div>
+            </Avatar>
           </div>
 
           <div className="space-y-2">

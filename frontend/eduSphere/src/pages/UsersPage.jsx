@@ -3,7 +3,7 @@ import { getAllUsers } from "../services/apiProfile";
 import { useAuth } from "../context/authContext";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import Card from "../ui/Card";
-import Table from "../ui/TableOff";
+import Table from "../ui/Table";
 import UserRow from "../features/user/UserRow";
 import Pagination from "../components/Pagination";
 import Spinner from "../ui/Spinner";
@@ -64,14 +64,12 @@ export default function Users() {
         <div className="rounded-md border">
           <Table>
             <Table.Header>
-              <Table.Row>
-                <Table.Head>Utilisateur</Table.Head>
-                <Table.Head>Rôle</Table.Head>
-                <Table.Head>Date d&apos;inscription</Table.Head>
-                <Table.Head>Numéro télephone</Table.Head>
-                <Table.Head>Status</Table.Head>
-                <Table.Head className="text-right">Actions</Table.Head>
-              </Table.Row>
+              <Table.Head>Utilisateur</Table.Head>
+              <Table.Head>Rôle</Table.Head>
+              <Table.Head>Status</Table.Head>
+              <Table.Head>Date d&apos;inscription</Table.Head>
+              {/* <Table.Head>Numéro télephone</Table.Head> */}
+              <Table.Head className="text-right">Actions</Table.Head>
             </Table.Header>
             <Table.Body
               data={users}

@@ -12,6 +12,7 @@ import {
 } from "react-icons/fi";
 import QuizLecture from "../../course/courseLecture/QuizLecture";
 import VideoPlayer from "../courseLecture/VideoPlayer";
+import Breadcrumb from "../../../components/Breadcrumb";
 
 export default function CoursePreview({ courseData, isPreview = false }) {
   const [openSection, setOpenSection] = useState(null);
@@ -58,9 +59,17 @@ export default function CoursePreview({ courseData, isPreview = false }) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="space-y-8  w-full "
+      className="space-y-8  w-full my-12 "
     >
-      <h2 className="text-3xl font-bold text-gray-800 mb-8">Course Preview</h2>
+      {isPreview && (
+        <Breadcrumb
+          items={[
+            { label: "Dashboard", path: "/dashboard" },
+            { label: "Courses", path: "/dashboard/courses" },
+            { label: "preview" }, // Pas de path => élément actif non cliquable
+          ]}
+        />
+      )}
 
       <div className="rounded-lg w-full border border-gray-200 bg-white shadow-lg">
         {/* Cover Image Section */}
