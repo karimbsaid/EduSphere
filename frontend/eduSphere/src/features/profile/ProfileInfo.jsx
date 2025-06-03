@@ -33,10 +33,10 @@ const ProfileInfo = ({ profile, handleSubmit }) => {
                   <FiPhone className="h-4 w-4" />
                   <span>{profile.phone}</span>
                 </div>
-                <div className="flex items-center gap-2">
+                {/* <div className="flex items-center gap-2">
                   <h3 className="text-base font-medium">bio </h3>
                   <span>{profile.bio}</span>
-                </div>
+                </div> */}
               </div>
             </div>
           </div>

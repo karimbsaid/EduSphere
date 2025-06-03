@@ -20,11 +20,11 @@ export default function Quiz({
       <div className="flex justify-between mb-4">
         <Badge
           text={`question ${questionIndex + 1} sur ${totalQuestion}`}
-          style="text-black bg-gray-200"
+          style="text-black bg-gray-200 p-2"
         />
         <Badge
           text={`${isMultipleChoice ? "choix multiple" : "choix unique"}`}
-          style="bg-black text-white"
+          style="bg-black text-white p-2"
         />
       </div>
       <Question

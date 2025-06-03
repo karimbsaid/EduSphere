@@ -31,8 +31,8 @@ export default function BlockUser({ selectedUser, blockUser, onClose }) {
         </p>
       )}
       <div className="flex justify-between">
-        <Button label="cancel" onClick={onClose} />
-        <Button label="save" onClick={onBlockUser} />
+        <Button label="cancel" onClick={onClose} variant="simple" outline />
+        <Button label="save" onClick={onBlockUser} variant="simple" />
       </div>
     </>
   );

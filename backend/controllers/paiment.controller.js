@@ -129,7 +129,7 @@ exports.verify = catchAsync(async (req, res, next) => {
         instructor: course.instructor.name,
         amount: course.price,
         message: "Votre accès au cours a été activé avec succès",
-        courseLink: `/course/${course._id}/start`,
+        courseLink: `${process.env.BASE_CLIENT_URL}/course/${course._id}/chapter/${firstSection}/lecture/${firstLecture}`,
       })
     );
   }

@@ -16,7 +16,7 @@ export default function QuizEditor({ questions, sectionIndex, contentIndex }) {
   };
 
   return (
-    <div>
+    <div className="space-y-4">
       {questions.map((question, questionIndex) => (
         <QuestionEditor
           key={questionIndex}
@@ -26,15 +26,17 @@ export default function QuizEditor({ questions, sectionIndex, contentIndex }) {
           contentIndex={contentIndex}
         />
       ))}
-      <Button
-        size="sm"
-        variant="simple"
-        outline
-        onClick={handleAddQuizQuestion}
-      >
-        <HiPlus className="mr-2 h-4 w-4" />
-        Add Question
-      </Button>
+      <div className="pt-2">
+        <Button
+          size="sm"
+          variant="simple"
+          outline
+          onClick={handleAddQuizQuestion}
+        >
+          <HiPlus className="w-4 h-4" />
+          <span>Question</span>
+        </Button>
+      </div>
     </div>
   );
 }

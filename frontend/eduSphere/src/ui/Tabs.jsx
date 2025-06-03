@@ -8,43 +8,35 @@ import React, {
 
 const TabsContext = createContext();
 
-export const Tabs = ({ defaultValue, children, className }) => {
+const Tabs = ({ defaultValue, children, className }) => {
   const [activeTab, setActiveTab] = useState(defaultValue);
-  const handleTabChange = (value) => {
-    setActiveTab(value);
-  };
 
   return (
-    <TabsContext.Provider value={{ activeTab, setActiveTab: handleTabChange }}>
+    <TabsContext.Provider value={{ activeTab, setActiveTab }}>
       <div className={className}>{children}</div>
     </TabsContext.Provider>
   );
 };
-
-export const TabsList = ({ children, className }) => {
-  const { setActiveTab } = useContext(TabsContext);
-
+const TabsList = ({ children, className }) => {
   return (
-    <div className={`grid w-full grid-cols-1  gap-2 ${className}`}>
-      {React.Children.map(children, (child) =>
-        cloneElement(child, {
-          onClick: () => setActiveTab(child.props.value),
-        })
-      )}
+    <div
+      className={`flex bg-slate-800/50 backdrop-blur-sm rounded-xl p-1 gap-1 ${className}`}
+    >
+      {children}
     </div>
   );
 };
 
-export const TabsTrigger = ({ children, value, className }) => {
+const TabsTrigger = ({ children, value, className }) => {
   const { activeTab, setActiveTab } = useContext(TabsContext);
 
   return (
     <button
-      className={`${
+      className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
         activeTab === value
-          ? "bg-black text-white"
-          : "text-black bg-gray-100 hover:bg-gray-200"
-      } p-2 rounded-md transition-colors ${className}`}
+          ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg transform scale-[1.02]"
+          : "text-slate-300 hover:text-white hover:bg-slate-700/50"
+      } ${className}`}
       onClick={() => setActiveTab(value)}
     >
       {children}
@@ -52,39 +44,17 @@ export const TabsTrigger = ({ children, value, className }) => {
   );
 };
 
-export const TabsContent = ({ value, children, className }) => {
+const TabsContent = ({ value, children, className }) => {
   const { activeTab } = useContext(TabsContext);
 
   return activeTab === value ? (
-    <div className={className}>{children}</div>
+    <div
+      className={`animate-in fade-in-0 slide-in-from-bottom-2 duration-300 ${className}`}
+    >
+      {children}
+    </div>
   ) : null;
 };
 
 // Utilisation corrigée
-const CourseTabs = () => (
-  <Tabs defaultValue="in-progress" className="mb-8">
-    <TabsList className="mb-4">
-      <TabsTrigger value="in-progress">En cours</TabsTrigger>
-      <TabsTrigger value="completed">Terminés</TabsTrigger>
-      <TabsTrigger value="archived">Archivés</TabsTrigger>
-    </TabsList>
-
-    <TabsContent value="in-progress">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {/* Contenu */}
-      </div>
-    </TabsContent>
-
-    <TabsContent value="completed">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {/* Contenu */}
-      </div>
-    </TabsContent>
-
-    <TabsContent value="archived">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {/* Contenu */}
-      </div>
-    </TabsContent>
-  </Tabs>
-);
+export { Tabs, TabsList, TabsTrigger, TabsContent };

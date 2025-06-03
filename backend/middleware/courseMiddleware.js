@@ -39,6 +39,7 @@ exports.getDocumentByQuery = ({
   populate, // optional populate config
 }) => {
   return async (req, res, next) => {
+    console.log("model name", model);
     try {
       const queryConditions = buildQuery(req);
       let query = model.findOne(queryConditions);
@@ -110,6 +111,7 @@ exports.getSection = catchAsync(async (req, res, next) => {
 });
 
 exports.checkOwnership = (req, res, next) => {
+  console.log("check ownership", req.course);
   if (req.course.instructor.toString() !== req.user._id.toString()) {
     return next(new AppError("Action non autorisée", 403));
   }

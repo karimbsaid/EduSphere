@@ -20,7 +20,11 @@ router.post(
 router.patch(
   "/:resourceId",
   auth.protect,
-  courseMiddleware.getDocumentById({ model: Course, paramIdKey: "courseId" }),
+  courseMiddleware.getDocumentById({
+    model: Course,
+    paramIdKey: "courseId",
+    reqKey: "course",
+  }),
   courseMiddleware.checkOwnership,
   courseMiddleware.getDocumentById({
     model: Ressource,

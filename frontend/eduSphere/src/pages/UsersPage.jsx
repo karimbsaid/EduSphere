@@ -20,31 +20,61 @@ export default function Users() {
   const limit = parseInt(searchParams.get("limit") || 5, 10);
   const role = searchParams.get("role") || "all";
   const search = searchParams.get("search") || "";
+
+  const fetchUsers = async () => {
+    setIsLoading(true);
+    try {
+      const query = {
+        page: currentPage,
+        limit,
+      };
+      if (search.trim() != "") query.search = search;
+      if (role != "all") query.role = role;
+      const data = await getAllUsers(token, query);
+      setTotalUsers(data.totalDocuments);
+      setUsers(data.users);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
   useEffect(() => {
-    const fetchUsers = async () => {
-      setIsLoading(true);
-      try {
-        const query = {
-          page: currentPage,
-          limit,
-        };
-        if (search.trim() != "") query.search = search;
-        if (role != "all") query.role = role;
-        const data = await getAllUsers(token, query);
-        setTotalUsers(data.totalDocuments);
-        setUsers(data.users);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
     fetchUsers();
   }, [currentPage, limit, token, searchParams, search, role]);
   const totalPages = Math.ceil(totalUsers / limit);
 
   const handleChangePage = (page) => {
     setSearchParams({ page, limit });
+  };
+
+  // const handleDeleteUser = (userId) => {
+  //   setUsers((prev) => {
+  //     prev.filter((user) => user._id != userId);
+  //   });
+  // };
+
+  // const handleDeleteUser = (userId) => {
+  //   setUsers((prevUsers) => prevUsers.filter((user) => user._id !== userId));
+  // };
+
+  const handleAddUser = (newUser) => {
+    console.log("new user", newUser);
+    setTotalUsers((prev) => prev + 1);
+
+    if (currentPage === 1) {
+      setUsers((prevUsers) => {
+        const updatedUsers = [newUser, ...prevUsers];
+        return updatedUsers.slice(0, limit);
+      });
+    } else {
+      handleChangePage(1);
+    }
+  };
+  const handleUpdateUser = (updateUser) => {
+    setUsers((prevUser) =>
+      prevUser.map((user) => (user._id === updateUser._id ? updateUser : user))
+    );
   };
 
   if (isLoading) {
@@ -59,7 +89,7 @@ export default function Users() {
   return (
     <div>
       <Card className="space-y-4">
-        <UserTableOperation />
+        <UserTableOperation handleAddUser={handleAddUser} />
 
         <div className="rounded-md border">
           <Table>
@@ -73,7 +103,14 @@ export default function Users() {
             </Table.Header>
             <Table.Body
               data={users}
-              render={(user) => <UserRow user={user} key={user._id} />}
+              render={(user) => (
+                <UserRow
+                  user={user}
+                  key={user._id}
+                  UpdateUser={handleUpdateUser}
+                  onRefetch={fetchUsers}
+                />
+              )}
             />
             <Table.Footer>
               <Pagination

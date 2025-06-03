@@ -4,15 +4,19 @@ import { useForm } from "react-hook-form";
 import Input from "../../ui/Input";
 import DropDown from "../../ui/DropDown";
 import Button from "../../ui/Button";
-import { deepDiff } from "../../utils/hasChanged";
 import { addUser, editUser } from "../../services/apiProfile";
 import { useAuth } from "../../context/authContext";
 import { getAllRoles } from "../../services/apiRole";
 import { useSearchParams } from "react-router-dom";
 
-export default function UserForm({ user = {}, onClose }) {
+export default function UserForm({
+  user = {},
+  onClose,
+  handleUpdateUser,
+  handleAddUser,
+}) {
   const [roles, setRoles] = useState([]);
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { user: authentifiedUser } = useAuth();
   const { token } = authentifiedUser;
@@ -25,12 +29,14 @@ export default function UserForm({ user = {}, onClose }) {
   }, []);
   const { _id, ...other } = user;
   const isEdit = !!_id;
+  console.log("user", user);
 
   const { register, handleSubmit, setValue, watch, formState } = useForm({
     defaultValues: isEdit
       ? {
           ...user,
           status: user.status ?? "active",
+          role: user.role._id,
           blockReason: user.blockReason ?? "",
         }
       : {
@@ -45,41 +51,37 @@ export default function UserForm({ user = {}, onClose }) {
   });
 
   const { errors } = formState;
-  // const selectedPermissions = watch("permissions");
-  // const handlePermissionChange = (permission) => {
-  //   const current = selectedPermissions || [];
-  //   if (current.includes(permission)) {
-  //     setValue(
-  //       "permissions",
-  //       current.filter((p) => p !== permission)
-  //     );
-  //   } else {
-  //     setValue("permissions", [...current, permission]);
-  //   }
-  // };
 
   const onFormSubmit = async (data) => {
-    console.log("on form submit");
-    if (isEdit) {
-      // const changedFields = deepDiff(other, data);
-      try {
-        const updatedUser = await editUser(token, { _id, ...data });
-        console.log(updatedUser);
-      } catch (err) {
-        console.error("Erreur de mise à jour :", err);
-      }
-    } else {
-      try {
-        const newUser = await addUser(token, data);
-        console.log("Utilisateur mis à jour:", newUser);
-      } catch (err) {
-        console.error("Erreur de mise à jour :", err);
-      }
-    }
-    searchParams.set("page", 1);
-    setSearchParams(searchParams);
+    setIsSubmitting(true);
+    try {
+      if (isEdit) {
+        const { user } = await editUser(token, { _id, ...data });
+        if (!user) return;
+        const matchedRole = roles.find(
+          (role) => String(role._id) === String(user.role)
+        );
+        handleUpdateUser({ ...user, role: matchedRole });
+      } else {
+        const { user } = await addUser(token, data);
+        if (!user) return;
 
-    onClose();
+        const matchedRole = roles.find(
+          (role) => String(role._id) === String(user.role)
+        );
+
+        handleAddUser({
+          ...user,
+          role: matchedRole,
+        });
+      }
+
+      onClose();
+    } catch (err) {
+      console.error("something went wrong");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -141,15 +143,12 @@ export default function UserForm({ user = {}, onClose }) {
       </div>
 
       <div className="flex justify-between mt-5">
-        <Button
-          label="annuler"
-          className="bg-blue-600 text-white"
-          onClick={onClose}
-        />
+        <Button label="annuler" variant="simple" outline onClick={onClose} />
         <Button
           type="submit"
+          variant="simple"
           label={isEdit ? "Mettre à jour" : "Créer"}
-          className="bg-blue-600 text-white"
+          disabled={isSubmitting}
         />
       </div>
     </form>

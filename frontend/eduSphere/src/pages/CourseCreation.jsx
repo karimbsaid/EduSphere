@@ -161,6 +161,7 @@ export default function CourseCreation() {
 
       if (courseId) {
         await handleUpdateCourse();
+        navigate(`/course/${courseId}/preview`);
       } else {
         await handleCreateCourse();
       }
@@ -171,6 +172,7 @@ export default function CourseCreation() {
     }
   };
   const handleStoreDocumentAssistant = async () => {
+    console.log("state ressources", state.resources);
     const splittable = state.resources.filter(
       (res) => res.isSpliter && !res.isNew
     );
@@ -178,6 +180,7 @@ export default function CourseCreation() {
 
     try {
       for (const res of splittable) {
+        console.log(res);
         await splitPdfFile(res);
       }
     } catch (error) {
@@ -185,32 +188,77 @@ export default function CourseCreation() {
     }
   };
 
+  // const handleCreateCourse = async () => {
+  //   try {
+  //     const course = await createFullCourse(state, token);
+  //     console.log(course);
+
+  //     // for (const sec of state.sections) {
+  //     //   const sectionRes = await createSection(
+  //     //     token,
+  //     //     course.data._id,
+  //     //     sec.title
+  //     //   );
+
+  //     //   for (const content of sec.lectures) {
+  //     //     await uploadLecture(
+  //     //       token,
+  //     //       course.data._id,
+  //     //       sectionRes.data._id,
+  //     //       content
+  //     //     );
+  //     //   }
+  //     // }
+  //     // if (state.resources.length > 0) {
+  //     //   for (const res of state.resources) {
+  //     //     await addResource(course.data._id, res, course.data.title, token);
+  //     //   }
+  //     // }
+  //     // handleStoreDocumentAssistant();
+  //     toast.success("Cours créé avec succès !");
+  //     navigate(`/course/${course.data._id}/preview`);
+  //   } catch (err) {
+  //     toast.error(`Erreur : ${err.message}`);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
   const handleCreateCourse = async () => {
     try {
-      const course = await createFullCourse(state, token);
+      const course = await createCourse(state, token);
 
-      // for (const sec of state.sections) {
-      //   const sectionRes = await createSection(
-      //     token,
-      //     course.data._id,
-      //     sec.title
-      //   );
+      for (const sec of state.sections) {
+        const sectionRes = await createSection(
+          token,
+          course.data._id,
+          sec.title
+        );
 
-      //   for (const content of sec.lectures) {
-      //     await uploadLecture(
-      //       token,
-      //       course.data._id,
-      //       sectionRes.data._id,
-      //       content
-      //     );
-      //   }
-      // }
-      // if (state.resources.length > 0) {
-      //   for (const res of state.resources) {
-      //     await addResource(course.data._id, res, course.data.title, token);
-      //   }
-      // }
-      // handleStoreDocumentAssistant();
+        for (const content of sec.lectures) {
+          const lectureResponse = await uploadLecture(
+            token,
+            course.data._id,
+            sectionRes.data._id,
+            content
+          );
+        }
+      }
+      if (state.resources.length > 0) {
+        for (const res of state.resources) {
+          const resourceLabel = `Création de resource ${res.title}`;
+          const response = await addResource(
+            course.data._id,
+            res,
+            course.data.title,
+            token
+          );
+        }
+      }
+      if (state.faq.length > 0) {
+        const response = await storeDocuments(state.faq);
+      }
+      handleStoreDocumentAssistant();
       toast.success("Cours créé avec succès !");
       navigate(`/course/${course.data._id}/preview`);
     } catch (err) {
@@ -266,12 +314,13 @@ export default function CourseCreation() {
           await addResource(courseId, res, token);
         }
         if (res.updated) {
-          await updateResource(res._id, res, token);
+          await updateResource(courseId, res._id, res, token);
         }
         if (res.deleted) {
-          await deleteRessource(res._id, token);
+          await deleteRessource(courseId, res._id, token);
         }
       }
+
       handleStoreDocumentAssistant();
     } catch (error) {
       console.error("Erreur lors de la mise à jour :", error);

@@ -25,7 +25,7 @@ router.post(
     sourceField: "title",
   }),
   courseMiddleware.parseJSONFieldsMiddleware(["tags"]),
-  courseController.createFullCourse
+  courseController.createCourse
 );
 router.patch(
   "/:courseId",
@@ -148,7 +148,7 @@ router.patch(
 );
 
 router.post("/:courseId/resources", resourceController.addResource);
-router.patch("/resources/:resourceId", resourceController.updateResource);
+// router.patch("/resources/:resourceId", resourceController.updateResource);
 //nested route
 // /courses/:courseId/reviews
 router.use("/:courseId/reviews", reviewRouter);

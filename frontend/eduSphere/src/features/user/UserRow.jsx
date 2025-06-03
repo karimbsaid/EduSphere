@@ -15,18 +15,11 @@ import {
 } from "react-icons/hi2";
 import BlockUser from "./BlockUser";
 import { formatDate } from "../../utils/formatDate";
-export default function UserRow({ user }) {
+import { useSearchParams } from "react-router-dom";
+export default function UserRow({ user, UpdateUser, onRefetch }) {
   const { user: authenifiedUser } = useAuth();
-  // const { permissions } = authenifiedUser;
   const { token } = authenifiedUser;
-  // function formatDate(isoDate) {
-  //   const date = new Date(isoDate);
-  //   const day = String(date.getDate()).padStart(2, "0");
-  //   const month = String(date.getMonth() + 1).padStart(2, "0");
-  //   const year = date.getFullYear();
-
-  //   return `${day}/${month}/${year}`;
-  // }
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const badgeVariant = {
     admin: "success",
@@ -40,7 +33,7 @@ export default function UserRow({ user }) {
   const handleDeleteUser = async (userId) => {
     try {
       await deleteUser(token, userId);
-      console.log("delete user successfully");
+      onRefetch();
     } catch (err) {
       console.error("Error deleting user:", err);
     }
@@ -49,13 +42,20 @@ export default function UserRow({ user }) {
   const handleBlockUser = async () => {
     if (user) {
       if (user.status === "active") {
-        await editUser(token, { status: "blocked", _id: user._id });
+        const { user: updatedUser } = await editUser(token, {
+          status: "blocked",
+          _id: user._id,
+        });
+        UpdateUser({ ...updatedUser, role: user.role });
       } else {
-        await editUser(token, { status: "active", _id: user._id });
+        const { user: updatedUser } = await editUser(token, {
+          status: "active",
+          _id: user._id,
+        });
+        UpdateUser({ ...updatedUser, role: user.role });
       }
     }
   };
-  console.log(user);
 
   return (
     <>
@@ -104,7 +104,7 @@ export default function UserRow({ user }) {
             </div>
 
             <Modal.Window name="editUser">
-              <UserForm user={user} />
+              <UserForm user={user} handleUpdateUser={UpdateUser} />
             </Modal.Window>
 
             <Modal.Window name="blockUser">

@@ -7,13 +7,16 @@ class CloudinaryStorage {
   }
 
   async upload(file, folder = "default", type = "auto") {
-    return await this.cloudinary.uploader.upload(file.tempFilePath, {
+    console.log("uploade file", file, folder, type);
+    const response = await this.cloudinary.uploader.upload(file.tempFilePath, {
       resource_type: type,
       use_filename: true,
       unique_filename: false,
       filename_override: file.name,
       folder,
     });
+    console.log(response);
+    return response;
   }
 
   async delete(publicId, resourceType = "image") {
@@ -48,10 +51,14 @@ class CloudinaryStorage {
 
   async updateFile({ file, existingUrl, assetFolder, type = "auto" }) {
     if (!file) return null;
-
+    console.log("file", file);
+    console.log("existing url", existingUrl);
+    console.log("asset folder", assetFolder);
+    console.log(type);
     try {
       if (existingUrl) {
         const publicId = this.getPublicIdFromUrl(existingUrl);
+        console.log("publicId");
 
         if (publicId) {
           await this.delete(publicId, type);
@@ -61,7 +68,7 @@ class CloudinaryStorage {
       const result = await this.upload(file, assetFolder, type);
       return result.secure_url;
     } catch (error) {
-      console.error("Error in Cloudinary file handler:", error.message);
+      console.error("Error in Cloudinary file handler:", error);
       throw error;
     }
   }

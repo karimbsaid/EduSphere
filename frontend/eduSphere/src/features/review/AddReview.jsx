@@ -50,14 +50,16 @@ const AddReview = ({ onClose }) => {
     }
     setIsSubmitting(true);
 
-    const response = await createReview(courseId, token, {
-      rating,
-      comment: reviewText,
-    });
-    if (response.status === "success") {
+    try {
+      const response = await createReview(courseId, token, {
+        rating,
+        comment: reviewText,
+      });
+
       setIsSubmitted(true);
-    } else {
-      setIsSubmitting(false);
+      onClose();
+    } catch (err) {
+      console.log(err);
     }
   };
 

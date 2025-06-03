@@ -8,6 +8,8 @@ exports.addReview = catchAsync(async (req, res, next) => {
   const { rating, comment } = req.body;
   const { courseId } = req.params;
   const { _id: studentId } = req.user;
+
+  console.log("add review");
   const review = new Review({
     course: courseId,
     student: studentId,
@@ -19,6 +21,15 @@ exports.addReview = catchAsync(async (req, res, next) => {
 });
 
 exports.getCourseReviews = async (req, res, next) => {
-  const reviews = await req.reviews.sort({ createdAt: -1 }).lean();
+  const courseId = req.params.courseId;
+
+  const reviews = await Review.find({ course: courseId })
+    .populate({
+      path: "student",
+      select: " name additionalDetails",
+      populate: { path: "additionalDetails", select: "-contactNumber -bio" },
+    })
+    .select("-course");
+
   res.status(200).json({ status: "success", reviews });
 };

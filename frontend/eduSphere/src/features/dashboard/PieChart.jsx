@@ -64,10 +64,8 @@ const PieChartCustom = ({
   showPercentage = true,
   animate = true,
 }) => {
-  // Calculate total for percentage display
   const total = data.reduce((sum, entry) => sum + entry[dataKey], 0);
 
-  // Custom tooltip component
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
@@ -90,7 +88,6 @@ const PieChartCustom = ({
     return null;
   };
 
-  // Custom label function
   const renderCustomLabel = ({
     cx,
     cy,
@@ -100,7 +97,7 @@ const PieChartCustom = ({
     percent,
     name,
   }) => {
-    if (percent < 0.05) return null; // Don't show labels for very small slices
+    if (percent < 0.05) return null;
 
     const RADIAN = Math.PI / 180;
     const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
@@ -121,7 +118,6 @@ const PieChartCustom = ({
     );
   };
 
-  // Custom legend component
   const CustomLegend = (props) => {
     const { payload } = props;
     return (
@@ -149,17 +145,14 @@ const PieChartCustom = ({
 
   return (
     <div className="w-full max-w-4xl mx-auto p-6 rounded-2xl shadow-lg bg-gradient-to-br from-white to-gray-50 border border-gray-100">
-      {/* Header with enhanced styling */}
       <div className="text-center mb-6">
         <h2 className="text-2xl font-bold text-gray-800 mb-2">{title}</h2>
         <div className="w-16 h-1 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full mx-auto"></div>
       </div>
 
-      {/* Chart container with improved responsive design */}
       <div className="relative">
         <ResponsiveContainer width="100%" height={400}>
           <PieChart>
-            {/* Define gradients */}
             <defs>
               {GRADIENT_COLORS.map((gradient, index) => (
                 <linearGradient
@@ -218,8 +211,7 @@ const PieChartCustom = ({
           </PieChart>
         </ResponsiveContainer>
 
-        {/* Center text for donut chart */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none -top-8">
           <div className="text-center">
             <div className="text-2xl font-bold text-gray-800">{total}</div>
             <div className="text-sm text-gray-500">Total</div>
@@ -227,7 +219,6 @@ const PieChartCustom = ({
         </div>
       </div>
 
-      {/* Enhanced legend */}
       <CustomLegend
         payload={data.map((item, index) => ({
           color: COLORS[index % COLORS.length],
@@ -235,9 +226,8 @@ const PieChartCustom = ({
         }))}
       />
 
-      {/* Additional stats section */}
       <div className="mt-6 pt-6 border-t border-gray-200">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+        <div className="flex justify-center gap-4 text-center">
           <div>
             <div className="text-lg font-semibold text-gray-800">
               {data.length}
@@ -248,7 +238,7 @@ const PieChartCustom = ({
             <div className="text-lg font-semibold text-gray-800">{total}</div>
             <div className="text-sm text-gray-500">Total Value</div>
           </div>
-          <div>
+          {/* <div>
             <div className="text-lg font-semibold text-gray-800">
               {data.length > 0 ? Math.round(total / data.length) : 0}
             </div>
@@ -259,7 +249,7 @@ const PieChartCustom = ({
               {data.length > 0 ? Math.max(...data.map((d) => d[dataKey])) : 0}
             </div>
             <div className="text-sm text-gray-500">Highest</div>
-          </div>
+          </div> */}
         </div>
       </div>
     </div>

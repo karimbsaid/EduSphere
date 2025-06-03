@@ -52,11 +52,12 @@ export default function AppLayout() {
         <Outlet />
       </main>
 
-      {/* Chatbot */}
-      <ChatbotButton
-        isOpen={isChatOpen}
-        onClick={() => setIsChatOpen(!isChatOpen)}
-      />
+      {courseId && sectionId && (
+        <ChatbotButton
+          isOpen={isChatOpen}
+          onClick={() => setIsChatOpen(!isChatOpen)}
+        />
+      )}
       {isChatOpen && (
         <ChatbotWindow
           isOpen={isChatOpen}

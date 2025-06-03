@@ -14,11 +14,10 @@ import Quiz from "./quiz/Quiz";
 import QuizResult from "./quiz/QuizResult";
 export default function QuizLecture({
   questions,
-  onComplete,
   duration,
   isPreview = false,
 }) {
-  const [timeLeft, setTimeLeft] = useState(duration || 900);
+  const [timeLeft, setTimeLeft] = useState(duration);
 
   useEffect(() => {
     if (timeLeft > 0) {
@@ -40,7 +39,7 @@ export default function QuizLecture({
     setScore(0);
     setQuestionStep(0);
     setShowResult(false);
-    setTimeLeft(900);
+    setTimeLeft(duration);
   };
   const handleAnswer = (optionId, questionId) => {
     setUserAnswer((prev) => {
@@ -77,7 +76,7 @@ export default function QuizLecture({
         const selectedOptions = userAnswer[index] || [];
         const correctOptions = question.options
           .map((opt, optIndex) => (opt.isCorrect ? optIndex : null))
-          .filter((opt) => opt !== null); // Garde seulement les index corrects
+          .filter((opt) => opt !== null);
 
         const isCorrect =
           selectedOptions.length === correctOptions.length &&
@@ -100,7 +99,6 @@ export default function QuizLecture({
       setScore(totalScore);
       setResults(resultsData);
       setShowResult(true);
-      onComplete();
       return;
     }
 
@@ -127,6 +125,7 @@ export default function QuizLecture({
         </div>
       </Card>
       <div className="grid grid-cols-1 sm:grid-cols-3">
+        {/*information section*/}
         <Card className="border-2 shadow-lg m-4 space-y-4 ">
           <h1 className="font-bold text-lg tracking-wide">Information</h1>
           <div className="flex justify-between">
@@ -165,12 +164,13 @@ export default function QuizLecture({
               />
             ))}
           </div>
-          <Button
+          {/* <Button
             onClick={onComplete}
             label="terminer le quiz"
             className="bg-green-500 text-white "
-          />
+          /> */}
         </Card>
+        {/* quiz section*/}
 
         <Card className="border-2 shadow-lg m-4 col-span-2">
           {isResultVisible ? (

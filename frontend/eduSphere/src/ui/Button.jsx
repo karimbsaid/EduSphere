@@ -78,9 +78,9 @@ const Button = ({
       outline: "border border-red-600 text-red-600 bg-transparent",
     },
     simple: {
-      solid: "bg-black text-white hover:bg-gray-600",
+      solid: "bg-black text-white hover:bg-gray-600 ",
       outline:
-        "border border-black text-black bg-transparent hover:bg-gray-100",
+        "border border-black text-black bg-transparent hover:bg-gray-200",
     },
   };
 

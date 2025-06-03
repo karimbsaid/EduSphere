@@ -6,18 +6,16 @@ import Button from "../../ui/Button";
 import UserForm from "./UserForm";
 import { useSearchParams } from "react-router-dom";
 import FilterButtons from "../../components/FilterButtons";
-import { useAuth } from "../../context/authContext";
 
-export default function UserTableOperation() {
-  const { user: authenifiedUser } = useAuth();
+export default function UserTableOperation({ handleAddUser }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const [querySearch, setQuerySearch] = useState("");
   const inputRef = useRef(null);
   const filterOptions = [
     { value: "all", label: "Tous" },
-    { value: "admin", label: "Administrateur" },
-    { value: "instructor", label: "Instructeur" },
-    { value: "student", label: "Etudiant" },
+    { value: "Admin", label: "Administrateur" },
+    { value: "Instructor", label: "Instructeur" },
+    { value: "Student", label: "Etudiant" },
   ];
   // const canAddUser = authenifiedUser?.role?.permissions?.some(
   //   (perm) => perm.feature.name === "addUser" && perm.authorized
@@ -47,7 +45,7 @@ export default function UserTableOperation() {
           </p>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex flex-col sm:flex-row gap-4 items-center">
           <div className="relative">
             <FaSearch className="absolute left-2 top-2.5 h-4 w-4 text-slate-400" />
             <Input
@@ -61,10 +59,13 @@ export default function UserTableOperation() {
 
           <Modal>
             <Modal.Open opens="addUser">
-              <Button label="ajouter un utilisateur" />
+              <Button
+                label={<span> + ajouter un utilisateur</span>}
+                variant="simple"
+              />
             </Modal.Open>
             <Modal.Window name="addUser">
-              <UserForm />
+              <UserForm handleAddUser={handleAddUser} />
             </Modal.Window>
           </Modal>
         </div>

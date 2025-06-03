@@ -285,8 +285,10 @@ async function createLectures(sectionsWithLectures, course, session, files) {
         })}`;
         const uploadedVideo = await storage.upload(
           files[fileFieldName], // Use the extracted fileFieldName to get the file
-          folder
+          folder,
+          "video"
         );
+        console.log(uploadedVideo);
         url = uploadedVideo.secure_url;
       }
       console.log({ ...lecture, url });
@@ -317,7 +319,7 @@ async function createResources(resources, courseId, session, files) {
     const file = files[resource.fileFieldName]; // 🔑 get the file from req.files
 
     if (file) {
-      const uploaded = await storage.upload(file, `courses/resources`);
+      const uploaded = await storage.upload(file, `courses/resources`, "raw");
       url = uploaded.secure_url;
     }
 

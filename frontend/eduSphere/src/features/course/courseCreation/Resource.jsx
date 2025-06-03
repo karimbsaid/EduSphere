@@ -21,11 +21,15 @@ export default function Resource({ resource, resourceIndex }) {
   };
 
   const isPDF = resource.file?.type === "application/pdf";
-  console.log(resource.file);
+  console.log(resource);
   console.log("isPDF", isPDF);
 
   return (
-    <div className="flex flex-col space-y-4 p-4 border m-2 rounded-md">
+    <div
+      className={`flex flex-col space-y-4 p-4 border m-2 rounded-md ${
+        resource.deleted ? "hidden" : ""
+      }`}
+    >
       <div className="flex items-center justify-between  space-x-6 ">
         <div className="flex-1">
           <Input
@@ -67,7 +71,7 @@ export default function Resource({ resource, resourceIndex }) {
             />
             <label htmlFor="gratuit">extract faq depuis ce document</label>
           </div>
-          {resource.isSplitter && (
+          {/* {resource.isSplitter && (
             <div className="flex flex-wrap">
               <Input
                 label="Page de début "
@@ -97,7 +101,7 @@ export default function Resource({ resource, resourceIndex }) {
                 }
               />
             </div>
-          )}
+          )} */}
         </>
       )}
     </div>

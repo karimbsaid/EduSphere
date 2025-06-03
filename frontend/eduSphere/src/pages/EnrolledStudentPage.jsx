@@ -8,6 +8,7 @@ import Pagination from "../components/Pagination";
 import { getListOfMyStudents } from "../services/apiEnrollment";
 import StudentTableOperation from "../features/students/StudentTableOperation";
 import StudentRow from "../features/students/StudentRow";
+import Loading from "../components/Loading";
 export default function EnrolledStudentPage() {
   const [students, setStudents] = useState([]);
   const [totalStudents, setTotalStudents] = useState(0);
@@ -59,12 +60,7 @@ export default function EnrolledStudentPage() {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen bg-gray-100">
-        <Spinner size="lg" />
-        <div className="ml-4 text-lg">Chargement...</div>
-      </div>
-    );
+    return <Loading />;
   }
 
   return (

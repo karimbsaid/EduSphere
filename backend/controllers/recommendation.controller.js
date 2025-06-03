@@ -8,12 +8,6 @@ exports.recommend = catchAsync(async (req, res, next) => {
 
   const interactions = await Interaction.find({ student: userId });
 
-  if (!interactions || interactions.length === 0) {
-    return next(
-      new AppError("Aucune interaction trouvée pour cet utilisateur", 404)
-    );
-  }
-
   const tagScores = interactions.reduce((scores, interaction) => {
     const { feature: tag, weight } = interaction;
 

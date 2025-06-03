@@ -17,6 +17,8 @@ exports.createLecture = catchAsync(async (req, res, next) => {
   const { course, section, user } = req;
   const { title, type, duration = 0, questions } = req.body;
 
+  const Numduration = Number(duration) || 0;
+
   const session = await mongoose.startSession();
   session.startTransaction();
 
@@ -34,13 +36,16 @@ exports.createLecture = catchAsync(async (req, res, next) => {
     }
 
     // Create lecture
-    const lecture = await Lecture.create([{ ...req.body, url, duration }], {
-      session,
-    });
+    const lecture = await Lecture.create(
+      [{ ...req.body, url, duration: Numduration }],
+      {
+        session,
+      }
+    );
 
     // Update section and course
     section.lectures.push(lecture[0]._id);
-    course.totalDuration += duration;
+    course.totalDuration += Numduration;
 
     await section.save({ session });
     await course.save({ session });

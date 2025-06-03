@@ -24,7 +24,7 @@ export const apiClient = async (
   } else {
     data = await res.text();
   }
-
+  console.log(res);
   if (!res.ok) {
     const errorMessage = data?.message || data || "Erreur API";
     throw new Error(errorMessage);

@@ -58,8 +58,8 @@ const nextLecture = (course, sectionId, lectureId) => {
     };
   }
   return {
-    nextSection: sections[0],
-    nextLecture: sections[0].lectures[0],
+    nextSection: sections[0]._id,
+    nextLecture: sections[0].lectures[0]._id,
   };
 };
 
@@ -152,6 +152,7 @@ exports.updateProgress = catchAsync(async (req, res, next) => {
 });
 
 exports.getProgress = catchAsync(async (req, res, next) => {
+  console.log("nrollement", req.enrollment);
   const { progress } = req.enrollment;
   res.status(200).json({
     status: "success",

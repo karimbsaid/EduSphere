@@ -6,7 +6,9 @@ import Card from "../../../ui/Card";
 import { convertSecondToTime } from "../../../utils/convertSecondToTime";
 
 export default function CourseCard({ course }) {
+  console.log(course);
   const { hours, minutes, seconds } = convertSecondToTime(course.totalDuration);
+
   const formattedDuration = hours
     ? `${hours} hours`
     : minutes
@@ -23,36 +25,54 @@ export default function CourseCard({ course }) {
         />
       </div>
 
-      <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-        {course.title}
-      </h2>
+      <div className="p-6 space-y-4">
+        {/* Title */}
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white line-clamp-2 leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-200">
+          {course.title}
+        </h2>
 
-      <p className="text-gray-600 dark:text-gray-300 text-sm mt-2">
-        {course.description}
-      </p>
+        {/* Description */}
+        <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed line-clamp-3">
+          {course.description}
+        </p>
 
-      <div className="flex items-center space-x-4 mt-4 text-gray-700 dark:text-gray-300 text-sm">
-        <div className="flex items-center">
-          <FaStar className="text-yellow-500" />
-          <span className="ml-1">
-            {" "}
-            {course.averageRating} ({course.ratingsQuantity} ratings)
-          </span>
-        </div>
-        <div className="flex items-center">
-          <MdAccessTime className="text-gray-500" />
-          <span className="ml-1">{formattedDuration}</span>
-        </div>
-      </div>
+        {/* Rating and Duration */}
+        <div className="flex items-center justify-between pt-2">
+          <div className="flex items-center space-x-1">
+            <div className="flex items-center bg-yellow-50 dark:bg-yellow-900/20 px-2 py-1 rounded-full">
+              <FaStar className="text-yellow-500 w-3 h-3" />
+              <span className="ml-1 text-sm font-medium text-gray-700 dark:text-gray-300">
+                {course.averageRating}
+              </span>
+            </div>
+            <span className="text-xs text-gray-500 dark:text-gray-400">
+              ({course.ratingsQuantity})
+            </span>
+          </div>
 
-      <div className="flex items-center space-x-4 mt-2 text-gray-700 dark:text-gray-300 text-sm">
-        <div className="flex items-center">
-          <IoBarChartSharp className="text-blue-500" />
-          <span className="ml-1">{course.level}</span>
+          <div className="flex items-center text-gray-500 dark:text-gray-400">
+            <MdAccessTime className="w-4 h-4" />
+            <span className="ml-1 text-sm font-medium">
+              {formattedDuration}
+            </span>
+          </div>
         </div>
-        <div className="flex items-center">
-          <FaUserGraduate className="text-green-500" />
-          <span className="ml-1">{course.totalStudent || 0} students</span>
+
+        {/* Level and Students */}
+        <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-800">
+          <div className="flex items-center space-x-1">
+            <IoBarChartSharp className="text-blue-500 w-4 h-4" />
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300 capitalize">
+              {course.level}
+            </span>
+          </div>
+
+          <div className="flex items-center space-x-1">
+            <FaUserGraduate className="text-green-500 w-4 h-4" />
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              {course.totalStudents} students
+            </span>
+          </div>
         </div>
       </div>
     </Card>

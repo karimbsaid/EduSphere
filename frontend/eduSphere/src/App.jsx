@@ -7,7 +7,7 @@ import Login from "./pages/Login";
 import { AuthProvider, useAuth } from "./context/authContext";
 import Signup from "./pages/SignUp";
 import Profile from "./pages/Profile";
-import AddReview from "./pages/CourseReview";
+// import AddReview from "./pages/CourseReview";
 import NotFound from "./pages/NotFound";
 import HomePage from "./pages/HomePage";
 import EnrolledCourse from "./pages/EnrolledCourse";
@@ -28,6 +28,7 @@ import { Navigate } from "react-router-dom";
 import Loading from "./components/Loading";
 import Role from "./pages/Role";
 import FeatureManagment from "./pages/FeatureManagment";
+import EnrolledStudentRoute from "./pages/EnrolledStudentRoute";
 
 function App() {
   const queryClient = new QueryClient({
@@ -73,22 +74,29 @@ function App() {
               <Route path="/course/:courseId" element={<CourseDetailPage />} />
               <Route path="/" element={<HomeRoute />} />
             </Route>
-            <Route element={<AppLayout />}>
-              <Route element={<ProtectedRoute group={["Student"]} />}>
+            {/* <Route element={<AppLayout />}> */}
+            <Route element={<ProtectedRoute group={["Student"]} />}>
+              <Route element={<EnrolledStudentRoute />}>
+                <Route element={<AppLayout />}>
+                  <Route
+                    path="/course/:courseId/chapter/:sectionId/lecture/:lectureId"
+                    element={<CourseLecture />}
+                  />
+                  {/* <Route
+                    path="/course/:courseId/add-review"
+                    element={<AddReview />}
+                  /> */}
+                </Route>
+              </Route>
+              <Route element={<AppLayout />}>
                 <Route
                   path="/my-enrolled-courses"
                   element={<EnrolledCourse />}
                 />
-                <Route
-                  path="/course/:courseId/chapter/:sectionId/lecture/:lectureId"
-                  element={<CourseLecture />}
-                />
-                <Route
-                  path="/course/:courseId/add-review"
-                  element={<AddReview />}
-                />
               </Route>
-              <Route element={<ProtectedRoute group={["Instructor"]} />}>
+            </Route>
+            <Route element={<ProtectedRoute group={["Instructor"]} />}>
+              <Route element={<AppLayout />}>
                 <Route
                   path="/my-courses/add"
                   element={
@@ -110,9 +118,9 @@ function App() {
                   }
                 />
               </Route>
-              <Route
-                element={<ProtectedRoute group={["Admin", "Instructor"]} />}
-              >
+            </Route>
+            <Route element={<ProtectedRoute group={["Admin", "Instructor"]} />}>
+              <Route element={<AppLayout />}>
                 <Route
                   path="/course/:courseId/preview"
                   element={<CoursePreviewPage />}
@@ -124,15 +132,19 @@ function App() {
                 />
 
                 <Route path="/dashboard" element={<Dashboard />} />
-                {/* <Route path="/dashboard/role" element={<Role />} />
-                <Route
-                  path="/dashboard/feature"
-                  element={<FeatureManagment />}
-                /> */}
-
+              </Route>
+            </Route>
+            <Route
+              element={
+                <ProtectedRoute group={["Admin", "Instructor", "Student"]} />
+              }
+            >
+              <Route element={<AppLayout />}>
                 <Route path="/my-profile" element={<Profile />} />
               </Route>
-              <Route element={<ProtectedRoute group={["Admin"]} />}>
+            </Route>
+            <Route element={<ProtectedRoute group={["Admin"]} />}>
+              <Route element={<AppLayout />}>
                 <Route path="/dashboard/users" element={<Users />} />
                 <Route path="/dashboard/role" element={<Role />} />
                 <Route
@@ -143,12 +155,14 @@ function App() {
                   path="/dashboard/payments"
                   element={<PaymentsDashboard />}
                 />
+                <Route path="/role" element={<Role />} />
+                <Route path="/feature" element={<FeatureManagment />} />
               </Route>
             </Route>
+            {/* </Route> */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Signup />} />
-            <Route path="/role" element={<Role />} />
-            <Route path="/feature" element={<FeatureManagment />} />
+
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Router>

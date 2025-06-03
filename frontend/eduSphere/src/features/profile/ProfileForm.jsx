@@ -14,7 +14,7 @@ export default function ProfileForm({
       name: formData.name || "",
       email: formData.email || "",
       phone: formData.phone || "",
-      bio: formData.bio || "",
+      // bio: formData.bio || "",
       avatar: formData.avatar || null,
     },
   });
@@ -122,7 +122,7 @@ export default function ProfileForm({
             />
           </div>
 
-          <div className="space-y-2">
+          {/* <div className="space-y-2">
             <label
               htmlFor="bio"
               className="block text-sm font-medium text-gray-700"
@@ -136,7 +136,7 @@ export default function ProfileForm({
               placeholder="Enter bio"
               className="mt-1 w-full rounded border-gray-300 p-2 shadow-sm focus:border-black focus:ring-black"
             />
-          </div>
+          </div> */}
         </div>
 
         <div className="flex justify-end gap-2 p-6 border-t">

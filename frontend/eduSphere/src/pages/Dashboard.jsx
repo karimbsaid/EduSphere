@@ -281,25 +281,25 @@ const Dashboard = () => {
               title="Utilisateurs totaux"
               value={stats.totalUsers}
               change={stats.newUsers}
-              changeText="cette période"
+              changeText="ce semaine"
             />
             <StatCard
               title="Revenus totaux"
-              value={`${120000} TND`}
-              change={120000}
-              changeText="cette période"
+              value={stats.totalRevenue}
+              change={stats.recentRevenue}
+              changeText="ce semaine"
             />
             <StatCard
               title="Cours actifs"
               value={stats.totalCoursesActive}
               change={stats.newCourses}
-              changeText="cette période"
+              changeText="ce semaine"
             />
             <StatCard
               title="Inscriptions récentes"
               value={stats.totalEnrollments}
               change={stats.recentEnrollments}
-              changeText="cette période"
+              changeText="ce semaine"
             />
           </>
         ) : (
@@ -308,19 +308,19 @@ const Dashboard = () => {
               title="Cours créés"
               value={stats.totalCourses}
               change={stats.newCourses}
-              changeText="cette période"
+              changeText="ce semaine"
             />
             <StatCard
               title="Revenus générés"
               value={`${stats.totalRevenue} TND`}
               change={stats.recentRevenue}
-              changeText="cette période"
+              changeText="ce semaine"
             />
             <StatCard
               title="Étudiants inscrits"
               value={stats.totalStudents}
               change={stats.newStudents}
-              changeText="cette période"
+              changeText="ce semaine"
             />
             <StatCard title="Cours en attente" value={stats.pendingCourses} />
           </>
@@ -343,25 +343,27 @@ const Dashboard = () => {
             data={charts.revenue.data}
           />
         </div>
-        {charts.studentsByCategory.length > 0 && (
-          <BarChartCustom data={charts.studentsByCategory} />
-        )}
-        {charts.studentsByCourses.length > 0 && (
-          <BarChartCustom
-            data={charts.studentsByCourses}
-            title="repartion étudiants par cours "
-          />
-        )}
-        {charts.coursesByCategories.length > 0 && (
-          <div className="bg-white p-4 rounded-lg shadow-md">
-            <PieChartCustom
-              data={charts.coursesByCategories}
-              nameKey="_id"
-              value="totalCourses"
-              title="repartion de cour par categories"
+        <div>
+          {charts.studentsByCourses.length > 0 && (
+            <BarChartCustom
+              data={charts.studentsByCourses}
+              title="repartion étudiants par cours "
             />
-          </div>
-        )}
+          )}
+          {charts.studentsByCategory.length > 0 && (
+            <BarChartCustom data={charts.studentsByCategory} />
+          )}
+          {charts.coursesByCategories.length > 0 && (
+            <div className="bg-white p-4 rounded-lg shadow-md">
+              <PieChartCustom
+                data={charts.coursesByCategories}
+                nameKey="_id"
+                value="totalCourses"
+                title="repartion de cour par categories"
+              />
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

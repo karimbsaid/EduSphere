@@ -4,7 +4,6 @@ import { FaFilter, FaSearch } from "react-icons/fa";
 import FilterButtons from "../../components/FilterButtons";
 import Input from "../../ui/Input";
 import { useSearchParams } from "react-router-dom";
-import DatePicker from "react-datepicker";
 
 export default function PaimentTableOperation() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -19,6 +18,11 @@ export default function PaimentTableOperation() {
 
   const startDate = rawStartDate ? new Date(rawStartDate) : firstDayOfMonth;
   const endDate = rawEndDate ? new Date(rawEndDate) : today;
+
+  // Helper function to format date for input[type="date"]
+  const formatDateForInput = (date) => {
+    return date.toISOString().split("T")[0];
+  };
 
   const filterOptions = [
     { value: "all", label: "Tous" },
@@ -67,32 +71,28 @@ export default function PaimentTableOperation() {
         <div className="flex flex-wrap items-center gap-4 mt-2">
           <div className="flex flex-col">
             <label className="text-sm text-slate-600">Date début</label>
-            <DatePicker
-              selected={startDate}
-              onChange={(date) => {
-                searchParams.set("startDate", date.toISOString());
+            <input
+              type="date"
+              value={formatDateForInput(startDate)}
+              onChange={(e) => {
+                const selectedDate = new Date(e.target.value);
+                searchParams.set("startDate", selectedDate.toISOString());
                 setSearchParams(searchParams);
               }}
-              selectsStart
-              startDate={startDate}
-              endDate={endDate}
-              placeholderText="Début"
               className="border rounded-md px-3 py-1 text-sm"
             />
           </div>
           <div className="flex flex-col">
             <label className="text-sm text-slate-600">Date fin</label>
-            <DatePicker
-              selected={endDate}
-              onChange={(date) => {
-                searchParams.set("endDate", date.toISOString());
+            <input
+              type="date"
+              value={formatDateForInput(endDate)}
+              onChange={(e) => {
+                const selectedDate = new Date(e.target.value);
+                searchParams.set("endDate", selectedDate.toISOString());
                 setSearchParams(searchParams);
               }}
-              selectsEnd
-              startDate={startDate}
-              endDate={endDate}
-              minDate={startDate}
-              placeholderText="Fin"
+              min={formatDateForInput(startDate)}
               className="border rounded-md px-3 py-1 text-sm"
             />
           </div>

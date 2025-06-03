@@ -95,7 +95,10 @@ export const createFullCourse = async (courseData, token) => {
 };
 
 export const createCourseUpdate = async (courseId, token) => {
-  return apiClient(`/courses/${courseId}/create-update`, { token });
+  return apiClient(`/courses/${courseId}/create-update`, {
+    token,
+    method: "POST",
+  });
 };
 
 export const submitCourseForApproval = async (courseId, token) => {
@@ -164,8 +167,13 @@ export const uploadLecture = async (
   });
 };
 
-export const getCourseDetail = async (courseId) => {
-  return apiClient(`/courses/${courseId}`);
+export const getCourseDetail = async (courseId, token = "") => {
+  const header = {};
+  if (token) {
+    header.token = token;
+  }
+  console.log("get course detail");
+  return apiClient(`/courses/${courseId}`, header);
 };
 
 export const getCourseProgramme = async (courseId, token) => {
@@ -322,11 +330,16 @@ export const addResource = async (courseId, resourceData, token) => {
   });
 };
 
-export const updateResource = async (resourceId, resourceData, token) => {
+export const updateResource = async (
+  courseId,
+  resourceId,
+  resourceData,
+  token
+) => {
   const formData = new FormData();
   formData.append("title", resourceData.title);
   if (resourceData.file) formData.append("resourceFile", resourceData.file);
-  return apiClient(`/courses/resources/${resourceId}`, {
+  return apiClient(`/courses/${courseId}/resources/${resourceId}`, {
     method: "PATCH",
     token,
     isForm: true,
@@ -334,8 +347,11 @@ export const updateResource = async (resourceId, resourceData, token) => {
   });
 };
 
-export const deleteRessource = async (ressourceId, token) => {
-  return apiClient(`/courses/resources/${ressourceId}`, { token });
+export const deleteRessource = async (courseId, ressourceId, token) => {
+  return apiClient(`/courses/${courseId}/resources/${ressourceId}`, {
+    token,
+    method: "DELETE",
+  });
 };
 
 export const getResources = async (courseId, token) => {

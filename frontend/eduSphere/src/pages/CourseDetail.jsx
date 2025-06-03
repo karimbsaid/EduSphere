@@ -17,7 +17,6 @@ export default function CourseDetailPage() {
   const [courseDetail, setCourseDetail] = useState({});
   const [reviews, setReviews] = useState([]);
   const [isEnrolled, setIsEnrolled] = useState(false);
-  const [isInstructor, setIsInstructor] = useState(false);
   const [openSection, setOpenSection] = useState("section-1");
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -35,26 +34,24 @@ export default function CourseDetailPage() {
           getCourseReviews(courseId),
         ]);
 
-        if (courseData.status === "fail") {
-          navigate("/notfound");
-          return;
-        }
+        console.log(courseData.course);
 
         const course = courseData.course;
 
-        // Vérifie si l'utilisateur connecté est l'instructeur
-        const isUserInstructor = token && user?._id === course.instructor?._id;
-        setIsInstructor(isUserInstructor);
-
-        // Si l'utilisateur est inscrit, récupère sa progression
-        if (token && !isUserInstructor) {
-          const progressResponse = await getProgress(courseId, token);
-          console.log(progressResponse);
-          if (progressResponse.status === "success") {
-            setIsEnrolled(true);
-            course.progress = progressResponse.progress;
+        if (token) {
+          try {
+            const progressResponse = await getProgress(courseId, token);
+            if (progressResponse.progress) {
+              console.log("progggre");
+              setIsEnrolled(true);
+              course.progress = progressResponse.progress;
+            }
+          } catch (err) {
+            console.log("errrere", err);
           }
         }
+
+        console.log("okay");
 
         setCourseDetail(course);
 
@@ -64,6 +61,7 @@ export default function CourseDetailPage() {
           setError(reviewData.message || "Erreur lors du chargement des avis");
         }
       } catch (err) {
+        console.log(err, err.status);
         if (err.status === 404) {
           navigate("/notfound");
         } else {
@@ -108,7 +106,6 @@ export default function CourseDetailPage() {
   const handleCourseAction = () => {
     if (!token) return navigate("/login");
 
-    if (isInstructor) return handlePreviewCourse();
     if (isEnrolled) return handleContinueCourse();
 
     return handleEnrollment();
@@ -148,7 +145,7 @@ export default function CourseDetailPage() {
           <CourseIncludes
             courseDetail={courseDetail}
             onActionClick={handleCourseAction}
-            isInstructor={isInstructor}
+            isInstructor={false}
           />
         </div>
       </div>

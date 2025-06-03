@@ -6,13 +6,15 @@ const cloudinary = require("../config/cloudinary");
 const Enrollment = require("../models/enrollment.model");
 const Course = require("../models/course.models");
 const APIFeatures = require("../utils/apiFeatures");
+const Role = require("../models/Role.model");
+
 exports.getAllUsers = catchAsync(async (req, res, next) => {
   const userId = req.user._id;
   const userRole = req.user.role;
 
   let filterUser = {};
 
-  if (userRole === "instructor") {
+  if (userRole === "Instructor") {
     const instructorCourses = await Course.find({ instructor: userId })
       .select("_id")
       .lean();
@@ -32,9 +34,20 @@ exports.getAllUsers = catchAsync(async (req, res, next) => {
     filterUser._id = { $in: uniqueStudentIds };
   }
 
+  // Handle role filtering by role name
+  if (req.query.role) {
+    console.log(req.query.role);
+    const role = await Role.findOne({ name: req.query.role }).select("_id");
+    console.log("role", role);
+    if (role) {
+      filterUser.role = role._id;
+    }
+    delete req.query.role;
+  }
+  console.log(await User.find(filterUser));
   const totalDocuments = await User.countDocuments(filterUser);
 
-  // Appliquer les filtres, tri, pagination, etc.
+  // Apply filters, sorting, pagination, etc.
   const features = new APIFeatures(
     User.find(filterUser).populate("role"),
     req.query

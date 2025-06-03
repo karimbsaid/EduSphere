@@ -33,22 +33,18 @@ exports.addResource = catchAsync(async (req, res, next) => {
 
 exports.updateResource = catchAsync(async (req, res, next) => {
   const { resourceId } = req.params;
+  console.log("ressource id", resourceId);
   const { title } = req.body;
-  const resource = await Resource.findById(resourceId);
+  const resource = await req.ressource;
+  console.log(resource);
   let resourceUrl = "";
   if (req.files && req.files.resourceFile) {
-    // const decodedImageUrl = decodeURIComponent(resource.resourceUrl);
-    // const parts = decodedImageUrl.split("/upload/")[1].split("/");
-    // const relevantParts = parts.slice(1).join("/");
-    // const publicId = relevantParts.split(".").slice(0, -1).join(".");
     const folder = `courses/resources`;
-
-    // const res = await deleteResourceFromCloudinary(publicId);
-    // const file = await uploadToCloudinary(req.files.resourceFile, folder);
     const file = await storage.updateFile({
       file: req.files.resourceFile,
       existingUrl: resource.resourceUrl,
       assetFolder: folder,
+      type: "raw",
     });
     resourceUrl = file.secure_url;
   }

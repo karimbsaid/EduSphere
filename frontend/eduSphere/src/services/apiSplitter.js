@@ -1,9 +1,7 @@
 const CHAT_URL = "http://127.0.0.1:8000/";
 export const splitPdfFile = async (resourceData) => {
+  console.log(resourceData.file);
   const formData = new FormData();
-  formData.append("subheading_size", resourceData.heading_font_threshold);
-  formData.append("debut_de_document", resourceData.debut_de_document);
-  formData.append("space_threshold", resourceData.space_threshold);
   if (resourceData.file) formData.append("file", resourceData.file);
   const response = await fetch(`${CHAT_URL}store-from-file`, {
     method: "POST",
@@ -39,6 +37,7 @@ export const ask = async (message, onToken) => {
     if (done) break;
 
     const token = decoder.decode(value, { stream: true });
-    onToken(token); // send token to the UI
+    console.log("token", token);
+    onToken(token);
   }
 };

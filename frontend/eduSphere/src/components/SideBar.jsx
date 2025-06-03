@@ -81,7 +81,7 @@ export default function SideBar({ courseId, sectionId, onClose }) {
           <HiX className="w-5 h-5" />
         </button>
       </div>
-      <nav className="flex-1 overflow-y-auto space-y-1">
+      <nav className="flex-1 overflow-hidden space-y-1">
         {isLoading && <span>loading...</span>}
         {courseId && sectionId ? (
           <CourseTabs data={course} />

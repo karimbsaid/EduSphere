@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getLecture } from "../services/apiCourse";
 import Button from "../ui/Button";
-import { updateProgress } from "../services/apiEnrollment";
+import { getProgress, updateProgress } from "../services/apiEnrollment";
 import { useAuth } from "../context/authContext";
 import VideoPlayer from "../features/course/courseLecture/VideoPlayer";
 import QuizLecture from "../features/course/courseLecture/QuizLecture";
@@ -12,12 +12,23 @@ import Loading from "../components/Loading";
 export default function CourseLecture() {
   const { courseId, sectionId, lectureId } = useParams();
   const [lecture, setLecture] = useState({});
-  const [isCompleted, setCompleted] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [completedLecture, setCompletedLecture] = useState([]);
   const { user } = useAuth();
   const navigate = useNavigate();
 
   const token = user?.token;
+  const fetchProgress = async () => {
+    const { progress } = await getProgress(courseId, token);
+    setCompletedLecture(progress.completedLectures);
+  };
+
+  const isCompleted = (lectureId) => {
+    return completedLecture.includes(lectureId);
+  };
+  useEffect(() => {
+    fetchProgress();
+  }, []);
 
   useEffect(() => {
     const fetchLecture = async () => {
@@ -38,7 +49,6 @@ export default function CourseLecture() {
   }, [lectureId, sectionId, courseId]);
 
   const handleLectureCompleted = async () => {
-    setCompleted(true);
     try {
       const { progress } = await updateProgress(
         courseId,
@@ -57,7 +67,6 @@ export default function CourseLecture() {
       }
     } catch (error) {
       toast.error(error.message);
-      setCompleted(false);
     }
   };
 
@@ -71,17 +80,17 @@ export default function CourseLecture() {
       {lecture.type === "quiz" && (
         <QuizLecture
           questions={lecture.questions}
-          onComplete={handleLectureCompleted}
           duration={lecture.duration}
         />
       )}
       <div className="flex flex-col items-center">
-        <Button
-          label="marquer complété"
-          className="bg-green-500 text-white"
-          onClick={handleLectureCompleted}
-          disabled={isCompleted}
-        />
+        {!isCompleted && (
+          <Button
+            label="marquer complété"
+            className="bg-green-500 text-white"
+            onClick={handleLectureCompleted}
+          />
+        )}
       </div>
     </div>
   );

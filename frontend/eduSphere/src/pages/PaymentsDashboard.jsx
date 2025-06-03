@@ -23,6 +23,10 @@ export default function PaymentsDashboard() {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
+    setSearchParams({});
+  }, []);
+
+  useEffect(() => {
     const fetchPayments = async () => {
       setIsLoading(true);
       const today = new Date();
@@ -79,14 +83,12 @@ export default function PaymentsDashboard() {
         <div className="rounded-md border">
           <Table>
             <Table.Header>
-              <Table.Row>
-                <Table.Head>ID Transaction</Table.Head>
-                <Table.Head>Utilisateur</Table.Head>
-                <Table.Head>Cours</Table.Head>
-                <Table.Head>Date</Table.Head>
-                <Table.Head>Montant</Table.Head>
-                <Table.Head>Status</Table.Head>
-              </Table.Row>
+              <Table.Head>ID Transaction</Table.Head>
+              <Table.Head>Utilisateur</Table.Head>
+              <Table.Head>Cours</Table.Head>
+              <Table.Head>Date</Table.Head>
+              <Table.Head>Montant</Table.Head>
+              <Table.Head>Status</Table.Head>
             </Table.Header>
             <Table.Body
               data={payments}

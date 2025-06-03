@@ -8,6 +8,7 @@ import Input from "../../../ui/Input";
 export default function CourseDetailsForm() {
   const { courseId } = useParams();
   const { state, dispatch } = useContext(CourseContext);
+  const isEdit = state.isEdit;
   const handleCourseDataChange = (field, value) => {
     dispatch({
       type: "SET_FIELD",
@@ -47,6 +48,7 @@ export default function CourseDetailsForm() {
           <Input
             label="Course Title"
             type="text"
+            disabled={isEdit}
             value={state.title}
             onChange={(e) => handleCourseDataChange("title", e.target.value)}
             className="w-full"
